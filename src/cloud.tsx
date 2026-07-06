@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import App from './App'
 import { supabase, cloudInitError, cloudHost, loadCloudStore, saveCloudStore, signInWithPassword, signOut } from './supabase'
@@ -7,6 +7,15 @@ const HostTag = () => cloudHost
   ? <div style={{ marginTop: 20, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--text-3)' }}>🔗 {cloudHost}</div>
   : null
 import { seedStore, migrateStore, type Store } from './data'
+import {
+  getIdentity, isStaff, loadForStaff, loadForMentee, saveForStaff, saveForMentee,
+  migrateFromWorkspace, type Identity,
+} from './cloud2'
+
+const EMPTY_STORE: Store = {
+  mentees: [], team: [], playbooks: [], sales: [], campaigns: [], goals: [],
+  checkins: [], redemptions: [], deals: [],
+}
 
 // ---------- Tela cheia genérica (login / carregando) ----------
 function Shell({ children }: { children: React.ReactNode }) {
@@ -69,11 +78,19 @@ function LoginScreen() {
   )
 }
 
-// ---------- Orquestrador: sessão → carregar workspace → App ----------
+// ---------- Orquestrador: sessão → papel → carregar → App ----------
 export default function CloudRoot() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
+  const [identity, setIdentity] = useState<Identity | null | undefined>(undefined) // null = fallback Fase 1
   const [store, setStore] = useState<Store | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+
+  // destino da gravação (muda conforme o papel); persist é estável e com debounce
+  const persistRef = useRef<(s: Store) => void>(() => {})
+  const persist = useMemo(() => {
+    let t: ReturnType<typeof setTimeout>
+    return (s: Store) => { clearTimeout(t); t = setTimeout(() => persistRef.current(s), 800) }
+  }, [])
 
   // Sessão de autenticação
   useEffect(() => {
@@ -83,21 +100,50 @@ export default function CloudRoot() {
     return () => sub.subscription.unsubscribe()
   }, [])
 
-  // Carrega o workspace compartilhado quando há sessão
+  // Descobre o papel e carrega os dados correspondentes
   useEffect(() => {
-    if (!session) { setStore(null); return }
+    if (!session) { setStore(null); setIdentity(undefined); return }
     let cancel = false
     ;(async () => {
       try {
-        const raw = await loadCloudStore()
+        // Fase 2 disponível? (se as tabelas não existirem, getIdentity lança → fallback)
+        let id: Identity | null = null
+        try { id = await getIdentity() } catch { id = null }
         if (cancel) return
-        if (raw) {
-          setStore(migrateStore(raw) ?? seedStore())
-        } else {
-          // primeiro acesso: cria o workspace com os dados-semente
-          const seeded = seedStore()
-          await saveCloudStore(seeded)
-          if (!cancel) setStore(seeded)
+
+        // ----- Fallback: Fase 1 (blob workspace) -----
+        if (!id) {
+          setIdentity(null)
+          persistRef.current = s => saveCloudStore(s)
+          const raw = await loadCloudStore()
+          const s = raw ? (migrateStore(raw) ?? seedStore()) : seedStore()
+          if (!raw) await saveCloudStore(s)
+          if (!cancel) setStore(s)
+          return
+        }
+
+        setIdentity(id)
+        if (!id.configured) { if (!cancel) setStore(null); return } // tela "não configurado"
+
+        // ----- Advisor / equipe: vê tudo (migra da Fase 1 na 1ª vez) -----
+        if (isStaff(id.role)) {
+          persistRef.current = s => saveForStaff(s)
+          let s = await loadForStaff()
+          if (!s || s.mentees.length === 0) {
+            const blob = await loadCloudStore() // dados da Fase 1
+            if (blob && blob.mentees.length) {
+              await migrateFromWorkspace(blob)
+              s = await loadForStaff()
+              if (!s || s.mentees.length === 0) s = blob // segurança: nunca vazio se havia dados
+            }
+          }
+          if (!cancel) setStore(s ?? seedStore())
+        }
+        // ----- Mentorado: só a própria linha -----
+        else {
+          persistRef.current = s => saveForMentee(s, id!.menteeId!)
+          const s = await loadForMentee(id.menteeId!)
+          if (!cancel) setStore(s ?? EMPTY_STORE)
         }
       } catch (e: any) {
         if (!cancel) setLoadError(e?.message ?? 'Falha ao carregar dados da nuvem.')
@@ -105,15 +151,6 @@ export default function CloudRoot() {
     })()
     return () => { cancel = true }
   }, [session])
-
-  // Persistência com debounce (evita gravar a cada tecla)
-  const persist = useMemo(() => {
-    let t: ReturnType<typeof setTimeout>
-    return (s: Store) => {
-      clearTimeout(t)
-      t = setTimeout(() => { saveCloudStore(s) }, 800)
-    }
-  }, [])
 
   if (cloudInitError) {
     return (
@@ -139,7 +176,20 @@ export default function CloudRoot() {
       </Shell>
     )
   }
-  if (!store) return <Spinner label="Carregando seus dados…" />
+  // Login válido mas sem vínculo (mentorado ainda não provisionado)
+  if (identity && !identity.configured) {
+    return (
+      <Shell>
+        <div className="display" style={{ fontSize: 20, marginTop: 18, textAlign: 'center' }}>Conta não vinculada</div>
+        <div className="muted" style={{ textAlign: 'center', marginTop: 12, fontSize: 13.5, lineHeight: 1.55 }}>
+          Seu acesso ainda não está ligado a um mentorado. Fale com seu advisor para concluir o cadastro.
+        </div>
+        <button className="reset-link" style={{ textAlign: 'center', width: '100%', marginTop: 18 }} onClick={() => signOut()}>Sair da conta</button>
+        <HostTag />
+      </Shell>
+    )
+  }
+  if (identity === undefined || !store) return <Spinner label="Carregando seus dados…" />
 
   return (
     <App
@@ -147,6 +197,7 @@ export default function CloudRoot() {
       persist={persist}
       cloudEmail={session.user.email ?? undefined}
       onCloudSignOut={() => signOut()}
+      cloudRole={identity && !isStaff(identity.role) ? 'mentee' : undefined}
     />
   )
 }

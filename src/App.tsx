@@ -231,10 +231,12 @@ interface AppProps {
   persist?: (s: Store) => void  // gravação na nuvem (debounced); ausente = localStorage
   cloudEmail?: string           // e-mail logado (mostra rodapé + sair da conta)
   onCloudSignOut?: () => void
+  cloudRole?: 'advisor' | 'mentee' // 'mentee' trava o app na jornada do próprio mentorado
 }
 
-export default function App({ initialStore, persist, cloudEmail, onCloudSignOut }: AppProps = {}) {
-  const [role, setRole] = useState<Role>('advisor')
+export default function App({ initialStore, persist, cloudEmail, onCloudSignOut, cloudRole }: AppProps = {}) {
+  const lockedMentee = cloudRole === 'mentee'
+  const [role, setRole] = useState<Role>(lockedMentee ? 'mentee' : 'advisor')
   const [view, setView] = useState<View>('overview')
   const [selected, setSelected] = useState<string>('ana')
   const [store, setStore] = useState<Store>(() => initialStore ?? loadStore())
@@ -350,7 +352,9 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut 
   const login = (id: string) => { setLoggedId(id); localStorage.setItem('advisor-os-logged', id) }
   const logout = () => { setLoggedId(null); localStorage.removeItem('advisor-os-logged') }
 
-  const menteeSelf = store.mentees.find(m => m.id === loggedId)
+  // No login de mentorado (nuvem) o Store traz só o próprio registro — sem seletor de perfil.
+  const menteeSelf = lockedMentee ? store.mentees[0] : store.mentees.find(m => m.id === loggedId)
+  const menteeLogout = lockedMentee ? (onCloudSignOut ?? logout) : logout
   const current = store.mentees.find(m => m.id === selected)
 
   const switchRole = (r: Role) => {
@@ -404,11 +408,15 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut 
         </nav>
 
         <div className="role-switch">
-          <div className="role-switch-label">Ver como</div>
-          <div className="role-toggle">
-            <button className={role === 'advisor' ? 'on' : ''} onClick={() => switchRole('advisor')}>Advisor</button>
-            <button className={role === 'mentee' ? 'on' : ''} onClick={() => switchRole('mentee')}>Mentorado</button>
-          </div>
+          {!lockedMentee && (
+            <>
+              <div className="role-switch-label">Ver como</div>
+              <div className="role-toggle">
+                <button className={role === 'advisor' ? 'on' : ''} onClick={() => switchRole('advisor')}>Advisor</button>
+                <button className={role === 'mentee' ? 'on' : ''} onClick={() => switchRole('mentee')}>Mentorado</button>
+              </div>
+            </>
+          )}
           {cloudEmail ? (
             <div className="account-box">
               <div className="account-email" title={cloudEmail}>{cloudEmail}</div>
@@ -435,8 +443,8 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut 
         {role === 'mentee' && (
           menteeSelf
             ? (view === 'journey'
-              ? <Journey m={menteeSelf} store={store} api={api} onLogout={logout} />
-              : <MyWeek m={menteeSelf} store={store} api={api} onLogout={logout} />)
+              ? <Journey m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />
+              : <MyWeek m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />)
             : <LoginView mentees={store.mentees} onLogin={login} />
         )}
       </main>

@@ -42,8 +42,9 @@ export async function getIdentity(): Promise<Identity | null> {
   if (!supabase) return null
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return null
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from('profiles').select('role, mentee_id').eq('user_id', session.user.id).maybeSingle()
+  if (error) throw error  // tabela ausente → CloudRoot cai no fallback da Fase 1
   const role = (profile?.role as Role) ?? 'mentee'
   const menteeId = profile?.mentee_id ?? undefined
   // staff é configurado por ter profile; mentee precisa de mentee_id vinculado
