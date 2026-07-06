@@ -145,19 +145,17 @@ export async function migrateFromWorkspace(store: Store): Promise<void> {
   await saveForStaff(store)
 }
 
-// ---------- Criar o login de um mentorado (via função serverless segura) ----------
+// ---------- Criar logins (via função serverless segura) ----------
 
-export async function createMenteeLogin(
-  menteeId: string, email: string, password: string,
-): Promise<{ error?: string }> {
+async function postCreateLogin(payload: Record<string, unknown>): Promise<{ error?: string }> {
   if (!supabase) return { error: 'Nuvem não configurada.' }
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return { error: 'Sessão expirada — entre novamente.' }
   try {
-    const res = await fetch('/api/create-mentee-login', {
+    const res = await fetch('/api/create-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ menteeId, email, password }),
+      body: JSON.stringify(payload),
     })
     const json = await res.json().catch(() => ({}))
     if (!res.ok) return { error: json.error || `Erro ${res.status}` }
@@ -166,3 +164,9 @@ export async function createMenteeLogin(
     return { error: e?.message || 'Falha de rede ao criar o acesso.' }
   }
 }
+
+export const createMenteeLogin = (menteeId: string, email: string, password: string) =>
+  postCreateLogin({ role: 'mentee', menteeId, email, password })
+
+export const createTeamLogin = (email: string, password: string) =>
+  postCreateLogin({ role: 'team', email, password })

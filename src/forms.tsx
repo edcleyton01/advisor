@@ -6,7 +6,7 @@ import {
   type SaleEntry, type Campaign, type PillarId, type FunnelId, type CampaignStatus,
   type MonthlyGoal, type Playbook, type PlaybookAction, type Deal, type DealStage, type Store,
 } from './data'
-import { createMenteeLogin } from './cloud2'
+import { createMenteeLogin, createTeamLogin } from './cloud2'
 
 const uid = () => Math.random().toString(36).slice(2, 10)
 const today = () => new Date().toISOString().slice(0, 10)
@@ -232,16 +232,35 @@ export function SessionForm({ team, onSave, onClose }: { team: TeamMember[]; onS
 
 // ---------- Equipe ----------
 
-export function TeamForm({ initial, mentees, onSave, onClose }: {
-  initial?: TeamMember; mentees: Mentee[]; onSave: (t: TeamMember) => void; onClose: () => void
+export function TeamForm({ initial, mentees, cloudMode, onSave, onClose }: {
+  initial?: TeamMember; mentees: Mentee[]; cloudMode?: boolean
+  onSave: (t: TeamMember) => void; onClose: () => void
 }) {
   const [f, setF] = useState<TeamMember>(() => initial ? structuredClone(initial) : ({
     id: uid(), name: '', initials: '', role: '', focus: [], menteeIds: [],
   }))
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
   const toggle = (key: 'focus' | 'menteeIds', v: string) =>
     setF(p => ({ ...p, [key]: (p[key] as string[]).includes(v) ? (p[key] as string[]).filter(x => x !== v) : [...(p[key] as string[]), v] }))
-  const ok = f.name.trim().length > 1 && f.role.trim().length > 0
-  const save = () => { onSave({ ...f, initials: initialsOf(f.name) }); onClose() }
+  // criar acesso só ao adicionar (não ao editar) e em modo nuvem
+  const canGrant = !!cloudMode && !initial
+  const wantsAccess = canGrant && (email.trim() !== '' || password !== '')
+  const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())
+  const ok = f.name.trim().length > 1 && f.role.trim().length > 0 && (!wantsAccess || (emailOk && password.length >= 6))
+  const save = async () => {
+    setErr(null)
+    if (wantsAccess) {
+      setBusy(true)
+      const { error } = await createTeamLogin(email.trim(), password)
+      setBusy(false)
+      if (error) { setErr(error); return }
+    }
+    onSave({ ...f, initials: initialsOf(f.name) })
+    onClose()
+  }
   return (
     <Modal title={initial ? 'Editar membro' : 'Adicionar membro da equipe'} onClose={onClose}>
       <div className="form-grid">
@@ -267,8 +286,28 @@ export function TeamForm({ initial, mentees, onSave, onClose }: {
             ))}
           </div>
         </div>
+        {canGrant && (
+          <div className="span2">
+            <div className="field" style={{ marginBottom: 4 }}><span>Acesso ao sistema (opcional)</span></div>
+            <div className="muted-3" style={{ fontSize: 11.5, marginBottom: 10 }}>
+              Preencha para já criar o login do membro — ele entra no mesmo endereço e vê o painel completo.
+            </div>
+            <div className="form-grid">
+              <Field label="E-mail de acesso">
+                <input className="in" type="email" value={email} onChange={e => { setEmail(e.target.value); setErr(null) }} placeholder="membro@empresa.com" />
+              </Field>
+              <Field label="Senha (mín. 6)">
+                <input className="in" type="password" value={password} onChange={e => { setPassword(e.target.value); setErr(null) }} />
+              </Field>
+            </div>
+          </div>
+        )}
       </div>
-      <Foot onClose={onClose} onSave={save} ok={ok} />
+      {err && <div className="login-err" style={{ marginTop: 12 }}>{err}</div>}
+      <div className="form-foot">
+        <button className="btn ghost" onClick={onClose}>Cancelar</button>
+        <button className="btn" disabled={!ok || busy} onClick={save}>{busy ? 'Criando acesso…' : 'Salvar'}</button>
+      </div>
     </Modal>
   )
 }

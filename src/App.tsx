@@ -236,6 +236,7 @@ interface AppProps {
 
 export default function App({ initialStore, persist, cloudEmail, onCloudSignOut, cloudRole }: AppProps = {}) {
   const lockedMentee = cloudRole === 'mentee'
+  const cloudMode = !!cloudEmail && !lockedMentee // advisor/equipe logados na nuvem → pode criar acessos
   const [role, setRole] = useState<Role>(lockedMentee ? 'mentee' : 'advisor')
   const [view, setView] = useState<View>('overview')
   const [selected, setSelected] = useState<string>('ana')
@@ -462,7 +463,7 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut,
         <SessionForm team={store.team} onSave={s => api.addSession(modal.menteeId, s)} onClose={() => setModal(null)} />
       )}
       {modal?.kind === 'team' && (
-        <TeamForm initial={modal.member} mentees={store.mentees} onSave={api.upTeam} onClose={() => setModal(null)} />
+        <TeamForm initial={modal.member} mentees={store.mentees} cloudMode={cloudMode} onSave={api.upTeam} onClose={() => setModal(null)} />
       )}
       {modal?.kind === 'sale' && (
         <SaleForm initial={modal.sale} mentees={store.mentees}
