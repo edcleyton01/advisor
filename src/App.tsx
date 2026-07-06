@@ -8,7 +8,7 @@ import {
 } from './data'
 import {
   MenteeForm, BlockForm, ActionForm, SessionForm, TeamForm, SaleForm, CampaignForm, GoalForm,
-  PlaybookForm, ApplyPlaybookModal, DealForm, CycleCloseForm,
+  PlaybookForm, ApplyPlaybookModal, DealForm, CycleCloseForm, MenteeLoginForm,
 } from './forms'
 import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commercial'
 import { MyWeek, RewardsSection, RankingCard } from './week'
@@ -433,7 +433,7 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut,
         {role === 'advisor' && view === 'mentees' && <MenteesList store={store} api={api} onOpen={openMentee} />}
         {role === 'advisor' && view === 'detail' && (
           current
-            ? <Detail m={current} store={store} api={api} onBack={() => setView('mentees')} />
+            ? <Detail m={current} store={store} api={api} onBack={() => setView('mentees')} cloudMode={!!cloudEmail && !lockedMentee} />
             : <MenteesList store={store} api={api} onOpen={openMentee} />
         )}
         {role === 'advisor' && view === 'sales' && <SalesView store={store} api={api} />}
@@ -502,6 +502,9 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut,
         const rm = store.mentees.find(x => x.id === modal.menteeId)
         return rm ? <ReportView m={rm} store={store} onClose={() => setModal(null)} /> : null
       })()}
+      {modal?.kind === 'menteeLogin' && (
+        <MenteeLoginForm menteeId={modal.menteeId} menteeName={modal.menteeName} onClose={() => setModal(null)} />
+      )}
     </div>
   )
 }
@@ -687,7 +690,7 @@ function SessionItem({ s, store }: { s: Session; store: Store }) {
 }
 
 // ---------- Advisor: Detail ----------
-function Detail({ m, store, api, onBack }: { m: Mentee; store: Store; api: Api; onBack: () => void }) {
+function Detail({ m, store, api, onBack, cloudMode }: { m: Mentee; store: Store; api: Api; onBack: () => void; cloudMode?: boolean }) {
   const xp = actionXp(m)
   const lv = levelForXp(xp)
   const prog = overallProgress(m)
@@ -716,6 +719,9 @@ function Detail({ m, store, api, onBack }: { m: Mentee; store: Store; api: Api; 
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {cloudMode && (
+              <button className="btn" onClick={() => api.open({ kind: 'menteeLogin', menteeId: m.id, menteeName: m.name })}>🔑 Criar acesso</button>
+            )}
             <button className="btn ghost" onClick={() => api.open({ kind: 'report', menteeId: m.id })}>⎙ Relatório</button>
             <button className="btn ghost" onClick={() => api.open({ kind: 'cycle', menteeId: m.id })}>◼ Encerrar ciclo</button>
             <button className="btn ghost" onClick={() => api.open({ kind: 'mentee', mentee: m })}>✎ Editar</button>

@@ -589,6 +589,7 @@ export type ModalState =
   | { kind: 'cycle'; menteeId: string }
   | { kind: 'comments'; menteeId: string; blockId: string; actionId: string }
   | { kind: 'report'; menteeId: string }
+  | { kind: 'menteeLogin'; menteeId: string; menteeName: string }
 
 export interface Api {
   open: (m: ModalState) => void

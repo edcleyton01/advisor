@@ -6,6 +6,7 @@ import {
   type SaleEntry, type Campaign, type PillarId, type FunnelId, type CampaignStatus,
   type MonthlyGoal, type Playbook, type PlaybookAction, type Deal, type DealStage, type Store,
 } from './data'
+import { createMenteeLogin } from './cloud2'
 
 const uid = () => Math.random().toString(36).slice(2, 10)
 const today = () => new Date().toISOString().slice(0, 10)
@@ -594,6 +595,62 @@ export function CampaignForm({ initial, mentees, defaults, onSave, onClose }: {
         </div>
       </div>
       <Foot onClose={onClose} onSave={save} ok={ok} />
+    </Modal>
+  )
+}
+
+// ---------- Criar acesso do mentorado (login) ----------
+
+export function MenteeLoginForm({ menteeId, menteeName, onClose }: {
+  menteeId: string; menteeName: string; onClose: () => void
+}) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const [done, setDone] = useState(false)
+  const ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && password.length >= 6
+
+  const submit = async () => {
+    setBusy(true); setErr(null)
+    const { error } = await createMenteeLogin(menteeId, email.trim(), password)
+    setBusy(false)
+    if (error) setErr(error); else setDone(true)
+  }
+
+  return (
+    <Modal title={`Criar acesso · ${menteeName}`} onClose={onClose}>
+      {done ? (
+        <>
+          <div className="calc-preview" style={{ borderColor: 'var(--good-dim)' }}>
+            ✓ Acesso criado! <b>{menteeName}</b> já pode entrar no mesmo endereço do sistema com
+            o e-mail <b>{email.trim()}</b> e a senha que você definiu — e verá apenas o próprio plano.
+          </div>
+          <div className="form-foot"><button className="btn" onClick={onClose}>Concluir</button></div>
+        </>
+      ) : (
+        <>
+          <div className="muted" style={{ fontSize: 13, lineHeight: 1.55, marginBottom: 16 }}>
+            Defina o login do mentorado. Ele entra no <b>mesmo endereço</b> do sistema e enxerga
+            somente a própria jornada — sem o painel do advisor.
+          </div>
+          <div className="form-grid">
+            <Field label="E-mail do mentorado" span2>
+              <input className="in" type="email" value={email} autoFocus
+                onChange={e => { setEmail(e.target.value); setErr(null) }} placeholder="mentorado@email.com" />
+            </Field>
+            <Field label="Senha inicial (mín. 6)" span2>
+              <input className="in" type="text" value={password}
+                onChange={e => { setPassword(e.target.value); setErr(null) }} placeholder="defina e informe ao mentorado" />
+            </Field>
+          </div>
+          {err && <div className="login-err" style={{ marginTop: 12 }}>{err}</div>}
+          <div className="form-foot">
+            <button className="btn ghost" onClick={onClose}>Cancelar</button>
+            <button className="btn" disabled={!ok || busy} onClick={submit}>{busy ? 'Criando…' : 'Criar acesso'}</button>
+          </div>
+        </>
+      )}
     </Modal>
   )
 }
