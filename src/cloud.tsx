@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import App from './App'
-import { supabase, cloudInitError, cloudHost, loadCloudStore, saveCloudStore, sendMagicLink, signOut } from './supabase'
+import { supabase, cloudInitError, cloudHost, loadCloudStore, saveCloudStore, signInWithPassword, signOut } from './supabase'
 
 const HostTag = () => cloudHost
   ? <div style={{ marginTop: 20, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--text-3)' }}>🔗 {cloudHost}</div>
@@ -30,49 +30,37 @@ function Spinner({ label }: { label: string }) {
   )
 }
 
-// ---------- Login por link mágico ----------
+// ---------- Login por e-mail + senha ----------
 function LoginScreen() {
   const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
+  const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  const ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)
+  const ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && password.length >= 6
 
   const submit = async () => {
     setBusy(true); setErr(null)
-    const { error } = await sendMagicLink(email.trim())
+    const { error } = await signInWithPassword(email.trim(), password)
     setBusy(false)
     if (error) setErr(error)
-    else setSent(true)
-  }
-
-  if (sent) {
-    return (
-      <Shell>
-        <div className="display" style={{ fontSize: 22, marginTop: 18, textAlign: 'center' }}>Verifique seu e-mail</div>
-        <div className="muted" style={{ textAlign: 'center', marginTop: 10, fontSize: 13.5, lineHeight: 1.55 }}>
-          Enviamos um link de acesso para <b style={{ color: 'var(--text)' }}>{email}</b>.
-          Abra no mesmo dispositivo para entrar.
-        </div>
-        <button className="btn ghost" style={{ margin: '22px auto 0', display: 'block' }} onClick={() => setSent(false)}>
-          Usar outro e-mail
-        </button>
-      </Shell>
-    )
+    // sucesso: onAuthStateChange assume e carrega o app
   }
 
   return (
     <Shell>
       <div className="display" style={{ fontSize: 22, marginTop: 18, textAlign: 'center' }}>Acesso da equipe</div>
       <div className="muted" style={{ textAlign: 'center', marginTop: 8, fontSize: 13.5 }}>
-        Entre com seu e-mail — enviamos um link de acesso, sem senha.
+        Entre com seu e-mail e senha.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 22 }}>
         <input className="in" type="email" inputMode="email" placeholder="voce@empresa.com.br" value={email} autoFocus
           onChange={e => { setEmail(e.target.value); setErr(null) }}
           onKeyDown={e => e.key === 'Enter' && ok && !busy && submit()} />
+        <input className="in" type="password" placeholder="Senha" value={password}
+          onChange={e => { setPassword(e.target.value); setErr(null) }}
+          onKeyDown={e => e.key === 'Enter' && ok && !busy && submit()} />
         <button className="btn" disabled={!ok || busy} onClick={submit}>
-          {busy ? 'Enviando…' : 'Enviar link de acesso →'}
+          {busy ? 'Entrando…' : 'Entrar →'}
         </button>
       </div>
       {err && <div className="login-err" style={{ marginTop: 12 }}>{err}</div>}

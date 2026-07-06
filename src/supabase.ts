@@ -65,15 +65,16 @@ export async function saveCloudStore(store: Store): Promise<void> {
   if (error) console.error('[cloud] save:', error.message)
 }
 
-// ---------- Autenticação (magic link por e-mail) ----------
+// ---------- Autenticação (e-mail + senha) ----------
 
-export async function sendMagicLink(email: string): Promise<{ error?: string }> {
+export async function signInWithPassword(email: string, password: string): Promise<{ error?: string }> {
   if (!supabase) return { error: 'Nuvem não configurada.' }
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: window.location.origin },
-  })
-  return { error: error?.message }
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  if (!error) return {}
+  // mensagens amigáveis para os casos comuns
+  if (/invalid login credentials/i.test(error.message)) return { error: 'E-mail ou senha incorretos.' }
+  if (/email not confirmed/i.test(error.message)) return { error: 'E-mail ainda não confirmado. No Supabase, marque o usuário como "Auto Confirm".' }
+  return { error: error.message }
 }
 
 export async function signOut(): Promise<void> {
