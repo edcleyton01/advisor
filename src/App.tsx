@@ -12,6 +12,7 @@ import {
 } from './forms'
 import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commercial'
 import { MyWeek, RewardsSection, RankingCard } from './week'
+import { FunnelCalculatorView } from './funnel'
 import {
   PlaybooksView, AgendaCard, InsightsCard, NotesCard, BadgesRow, CommentsModal, ReportView,
 } from './extras'
@@ -215,7 +216,7 @@ function MenteeCard({ m, store, onOpen }: { m: Mentee; store: Store; onOpen: () 
 
 // ---------- App ----------
 type Role = 'advisor' | 'mentee'
-type View = 'overview' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week'
+type View = 'overview' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'funnel'
 
 const NAV: { id: View; label: string }[] = [
   { id: 'overview', label: 'Visão geral' },
@@ -398,6 +399,9 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut,
               <button className={`nav-item ${view === 'journey' ? 'active' : ''}`} onClick={() => setView('journey')}>
                 <span className="dot" /> Minha jornada
               </button>
+              <button className={`nav-item ${view === 'funnel' ? 'active' : ''}`} onClick={() => setView('funnel')}>
+                <span className="dot" /> Calculadora de funil
+              </button>
             </>
           )}
           <div className="nav-label" style={{ marginTop: 20 }}>Pilares</div>
@@ -445,7 +449,9 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut,
           menteeSelf
             ? (view === 'journey'
               ? <Journey m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />
-              : <MyWeek m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />)
+              : view === 'funnel'
+                ? <FunnelCalculatorView m={menteeSelf} onLogout={menteeLogout} />
+                : <MyWeek m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />)
             : <LoginView mentees={store.mentees} onLogin={login} />
         )}
       </main>
