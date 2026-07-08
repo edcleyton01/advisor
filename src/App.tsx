@@ -14,6 +14,7 @@ import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commerci
 import { MyWeek, RewardsSection, RankingCard } from './week'
 import { FunnelCalculatorView, FunnelBoard } from './funnel'
 import { ProgramDashboard } from './program'
+import { Attachments } from './attachments'
 import {
   PlaybooksView, AgendaCard, InsightsCard, NotesCard, BadgesRow, CommentsModal, ReportView,
 } from './extras'
@@ -94,9 +95,9 @@ interface BlockTools {
   onReturn: (a: Action) => void
 }
 
-function ActionBlockView({ block, onToggle, interactive, tools, onComment }: {
+function ActionBlockView({ block, onToggle, interactive, tools, onComment, menteeId, api }: {
   block: ActionBlock; onToggle: (aId: string) => void; interactive: boolean
-  tools?: BlockTools; onComment?: (a: Action) => void
+  tools?: BlockTools; onComment?: (a: Action) => void; menteeId?: string; api?: Api
 }) {
   const p = pillarById(block.pillar)
   const prog = blockProgress(block)
@@ -126,7 +127,8 @@ function ActionBlockView({ block, onToggle, interactive, tools, onComment }: {
       </div>
       <div className="actions">
         {block.actions.map(a => (
-          <div key={a.id} className={`action ${a.status}`}>
+          <div key={a.id} className="action-wrap">
+            <div className={`action ${a.status}`}>
             <button
               className={`check ${a.status}`}
               onClick={() => interactive && onToggle(a.id)}
@@ -161,6 +163,10 @@ function ActionBlockView({ block, onToggle, interactive, tools, onComment }: {
                 </span>
               )}
             </div>
+            </div>
+            {menteeId && api && (
+              <Attachments menteeId={menteeId} blockId={block.id} action={a} api={api} canEdit={interactive || !!tools} />
+            )}
           </div>
         ))}
         {tools && (
@@ -803,7 +809,7 @@ function Detail({ m, store, api, onBack, cloudMode }: { m: Mentee; store: Store;
           </div>
           <div className="grid stagger">
             {blocks.length ? blocks.map(b => (
-              <ActionBlockView key={b.id} block={b} interactive
+              <ActionBlockView key={b.id} block={b} interactive menteeId={m.id} api={api}
                 onToggle={aId => api.toggleAction(m.id, aId, 'advisor')}
                 onComment={a => api.open({ kind: 'comments', menteeId: m.id, blockId: b.id, actionId: a.id })}
                 tools={{
@@ -907,7 +913,7 @@ function Journey({ m, store, api, onLogout }: { m: Mentee; store: Store; api: Ap
           </div>
           <div className="grid stagger">
             {blocks.length ? blocks.map(b => (
-              <ActionBlockView key={b.id} block={b} interactive
+              <ActionBlockView key={b.id} block={b} interactive menteeId={m.id} api={api}
                 onToggle={aId => api.toggleAction(m.id, aId, 'mentee')}
                 onComment={a => api.open({ kind: 'comments', menteeId: m.id, blockId: b.id, actionId: a.id })} />
             )) : <div className="empty">Nenhum bloco neste pilar ainda.</div>}

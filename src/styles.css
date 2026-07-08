@@ -514,6 +514,19 @@ tr:hover .row-tools, .camp:hover .row-tools { opacity: 1; }
 .cohort-metrics { display: flex; justify-content: space-between; gap: 10px; }
 .cohort-metrics b { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; margin-top: 4px; display: block; font-variant-numeric: tabular-nums; }
 
+/* ---------- Anexos de evidência ---------- */
+.action-wrap { display: flex; flex-direction: column; }
+.attach { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 0 12px 9px 46px; }
+.attach-chip { display: inline-flex; align-items: center; background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.attach-open { font-size: 11px; color: var(--good); padding: 4px 8px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attach-open:hover { background: var(--good-dim); }
+.attach-del { font-size: 10px; color: var(--text-3); padding: 4px 7px; border-left: 1px solid var(--line); }
+.attach-del:hover { color: #f27979; background: var(--surface); }
+.attach-add { font-size: 11px; color: var(--text-3); border: 1px dashed var(--line-2); border-radius: 7px; padding: 4px 9px; transition: all 0.15s; }
+.attach-add:hover { color: var(--good); border-color: rgba(78,201,138,0.4); background: var(--good-dim); }
+.attach-add:disabled { opacity: 0.5; pointer-events: none; }
+.attach-err { font-size: 11px; color: #f27979; }
+
 /* ============================================================
    Metodologia: check-in, semana, aprovação, playbooks,
    pipeline, loja, ranking, pauta, relatório

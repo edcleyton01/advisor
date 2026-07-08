@@ -4,6 +4,7 @@ import {
   levelForXp, spentXp, REWARD_CATALOG, pillarById, pcolor, fmtDate,
   type Mentee, type Store, type Api, type Action, type ActionBlock, type CheckIn,
 } from './data'
+import { Attachments } from './attachments'
 
 const uid = () => Math.random().toString(36).slice(2, 10)
 
@@ -74,6 +75,7 @@ function WeekRow({ it, m, api, overdue }: { it: WeekItem; m: Mentee; api: Api; o
   const nComments = a.comments?.length ?? 0
   const locked = a.status === 'done'
   return (
+    <div className="action-wrap">
     <div className={`action ${a.status}`}>
       <button className={`check ${a.status}`}
         onClick={() => !locked && api.toggleAction(m.id, a.id, 'mentee')}
@@ -93,6 +95,8 @@ function WeekRow({ it, m, api, overdue }: { it: WeekItem; m: Mentee; api: Api; o
         <span className="due" style={overdue ? { color: '#f27979', fontWeight: 700 } : undefined}>{fmtDate(a.due)}</span>
         <span className="xp-chip">+{a.xp}</span>
       </div>
+    </div>
+    <Attachments menteeId={m.id} blockId={it.b.id} action={a} api={api} canEdit />
     </div>
   )
 }

@@ -61,6 +61,15 @@ export interface Comment {
   date: string // ISO
 }
 
+// Anexo de evidência (arquivo no Supabase Storage)
+export interface Attachment {
+  id: string
+  path: string        // caminho no bucket
+  name: string
+  size: number
+  uploadedAt: string  // ISO
+}
+
 export interface Action {
   id: string
   title: string
@@ -69,6 +78,7 @@ export interface Action {
   due: string // ISO
   evidence?: string // link/nota de entrega
   comments?: Comment[]
+  attachments?: Attachment[]
 }
 
 export interface ActionBlock {
