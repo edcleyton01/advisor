@@ -13,6 +13,7 @@ import {
 import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commercial'
 import { MyWeek, RewardsSection, RankingCard } from './week'
 import { FunnelCalculatorView, FunnelBoard } from './funnel'
+import { ProgramDashboard } from './program'
 import {
   PlaybooksView, AgendaCard, InsightsCard, NotesCard, BadgesRow, CommentsModal, ReportView,
 } from './extras'
@@ -216,10 +217,11 @@ function MenteeCard({ m, store, onOpen }: { m: Mentee; store: Store; onOpen: () 
 
 // ---------- App ----------
 type Role = 'advisor' | 'mentee'
-type View = 'overview' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'funnel' | 'funnelboard'
+type View = 'overview' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'funnel' | 'funnelboard'
 
 const NAV: { id: View; label: string }[] = [
   { id: 'overview', label: 'Visão geral' },
+  { id: 'evolution', label: 'Evolução' },
   { id: 'mentees', label: 'Mentorados' },
   { id: 'sales', label: 'Comercial' },
   { id: 'campaigns', label: 'Campanhas' },
@@ -447,6 +449,7 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut,
         {role === 'advisor' && view === 'sales' && <SalesView store={store} api={api} />}
         {role === 'advisor' && view === 'campaigns' && <CampaignsView store={store} api={api} />}
         {role === 'advisor' && view === 'funnelboard' && <FunnelBoard store={store} />}
+        {role === 'advisor' && view === 'evolution' && <ProgramDashboard store={store} />}
         {role === 'advisor' && view === 'playbooks' && <PlaybooksView store={store} api={api} />}
         {role === 'advisor' && view === 'team' && <TeamView store={store} api={api} />}
         {role === 'mentee' && (
