@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import App from './App'
 import { supabase, cloudInitError, cloudHost, loadCloudStore, saveCloudStore, signInWithPassword, signOut } from './supabase'
@@ -85,12 +85,12 @@ export default function CloudRoot() {
   const [store, setStore] = useState<Store | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  // destino da gravação (muda conforme o papel); persist é estável e com debounce
+  // destino da gravação (muda conforme o papel)
   const persistRef = useRef<(s: Store) => void>(() => {})
-  const persist = useMemo(() => {
-    let t: ReturnType<typeof setTimeout>
-    return (s: Store) => { clearTimeout(t); t = setTimeout(() => persistRef.current(s), 800) }
-  }, [])
+  const skipPersist = useRef(false)   // não regrava mudanças vindas do Realtime/carga inicial
+  const hasPending = useRef(false)    // há edição local ainda não salva?
+  const lastSaveAt = useRef(0)        // p/ ignorar o eco das próprias gravações
+  const [stale, setStale] = useState(false) // outro usuário alterou enquanto você editava
 
   // Sessão de autenticação
   useEffect(() => {
@@ -118,7 +118,7 @@ export default function CloudRoot() {
           const raw = await loadCloudStore()
           const s = raw ? (migrateStore(raw) ?? seedStore()) : seedStore()
           if (!raw) await saveCloudStore(s)
-          if (!cancel) setStore(s)
+          if (!cancel) { skipPersist.current = true; setStore(s) }
           return
         }
 
@@ -137,13 +137,13 @@ export default function CloudRoot() {
               if (!s || s.mentees.length === 0) s = blob // segurança: nunca vazio se havia dados
             }
           }
-          if (!cancel) setStore(s ?? seedStore())
+          if (!cancel) { skipPersist.current = true; setStore(s ?? seedStore()) }
         }
         // ----- Mentorado: só a própria linha -----
         else {
           persistRef.current = s => saveForMentee(s, id!.menteeId!)
           const s = await loadForMentee(id.menteeId!)
-          if (!cancel) setStore(s ?? EMPTY_STORE)
+          if (!cancel) { skipPersist.current = true; setStore(s ?? EMPTY_STORE) }
         }
       } catch (e: any) {
         if (!cancel) setLoadError(e?.message ?? 'Falha ao carregar dados da nuvem.')
@@ -151,6 +151,41 @@ export default function CloudRoot() {
     })()
     return () => { cancel = true }
   }, [session])
+
+  // Persistência (debounce) — na nuvem o CloudRoot é dono do estado
+  useEffect(() => {
+    if (!store) return
+    if (skipPersist.current) { skipPersist.current = false; return }
+    hasPending.current = true
+    const t = setTimeout(async () => {
+      await persistRef.current(store)
+      lastSaveAt.current = Date.now()
+      hasPending.current = false
+    }, 800)
+    return () => clearTimeout(t)
+  }, [store])
+
+  // Re-busca os dados do servidor e aplica sem regravar
+  const refetch = useCallback(async () => {
+    if (!identity || !identity.configured) return
+    const s = isStaff(identity.role) ? await loadForStaff() : await loadForMentee(identity.menteeId!)
+    if (s) { skipPersist.current = true; setStore(s); setStale(false) }
+  }, [identity])
+
+  // Realtime: mudanças de outros usuários (Fase 2; a RLS garante que cada um só recebe o que pode ver)
+  useEffect(() => {
+    if (!supabase || !identity || !identity.configured) return
+    const onRemote = () => {
+      if (Date.now() - lastSaveAt.current < 3000) return // eco da própria gravação → ignora
+      if (hasPending.current) setStale(true)             // você editando → só avisa
+      else refetch()                                     // ocioso → aplica ao vivo
+    }
+    const ch = supabase.channel('rt-advisor-os')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mentees' }, onRemote)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'shared' }, onRemote)
+      .subscribe()
+    return () => { supabase!.removeChannel(ch) }
+  }, [identity, refetch])
 
   if (cloudInitError) {
     return (
@@ -192,12 +227,19 @@ export default function CloudRoot() {
   if (identity === undefined || !store) return <Spinner label="Carregando seus dados…" />
 
   return (
-    <App
-      initialStore={store}
-      persist={persist}
-      cloudEmail={session.user.email ?? undefined}
-      onCloudSignOut={() => signOut()}
-      cloudRole={identity && !isStaff(identity.role) ? 'mentee' : undefined}
-    />
+    <>
+      <App
+        store={store}
+        setStore={setStore as Dispatch<SetStateAction<Store>>}
+        cloudEmail={session.user.email ?? undefined}
+        onCloudSignOut={() => signOut()}
+        cloudRole={identity && !isStaff(identity.role) ? 'mentee' : undefined}
+      />
+      {stale && (
+        <button className="rt-banner" onClick={() => refetch()}>
+          🔄 Outra pessoa atualizou os dados — clique para atualizar
+        </button>
+      )}
+    </>
   )
 }

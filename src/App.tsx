@@ -238,26 +238,32 @@ const NAV: { id: View; label: string }[] = [
 ]
 
 interface AppProps {
-  initialStore?: Store          // fornecido pela nuvem; ausente = modo localStorage
-  persist?: (s: Store) => void  // gravação na nuvem (debounced); ausente = localStorage
+  // Nuvem: estado controlado pelo CloudRoot (permite Realtime). Ausente = modo localStorage.
+  store?: Store
+  setStore?: React.Dispatch<React.SetStateAction<Store>>
   cloudEmail?: string           // e-mail logado (mostra rodapé + sair da conta)
   onCloudSignOut?: () => void
   cloudRole?: 'advisor' | 'mentee' // 'mentee' trava o app na jornada do próprio mentorado
 }
 
-export default function App({ initialStore, persist, cloudEmail, onCloudSignOut, cloudRole }: AppProps = {}) {
+export default function App({ store: cStore, setStore: cSetStore, cloudEmail, onCloudSignOut, cloudRole }: AppProps = {}) {
   const lockedMentee = cloudRole === 'mentee'
   const cloudMode = !!cloudEmail && !lockedMentee // advisor/equipe logados na nuvem → pode criar acessos
   const [role, setRole] = useState<Role>(lockedMentee ? 'mentee' : 'advisor')
   const [view, setView] = useState<View>('overview')
   const [selected, setSelected] = useState<string>('ana')
-  const [store, setStore] = useState<Store>(() => initialStore ?? loadStore())
   const [modal, setModal] = useState<ModalState | null>(null)
 
+  // Estado controlado (nuvem) ou local (localStorage)
+  const controlled = !!cSetStore
+  const [localStore, setLocalStore] = useState<Store>(() => loadStore())
+  const store = controlled ? cStore! : localStore
+  const setStore = controlled ? cSetStore! : setLocalStore
+
   useEffect(() => {
-    if (persist) persist(store)
-    else { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)) } catch { /* quota */ } }
-  }, [store])
+    if (controlled) return // na nuvem, o CloudRoot cuida da persistência
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(localStore)) } catch { /* quota */ }
+  }, [localStore, controlled])
 
   const api: Api = {
     open: setModal,

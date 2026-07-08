@@ -544,6 +544,17 @@ tr:hover .row-tools, .camp:hover .row-tools { opacity: 1; }
 .alert-go { font-size: 12px; color: var(--text-3); flex-shrink: 0; }
 .alert-card:hover .alert-go { color: var(--text); }
 
+/* ---------- Banner de atualização em tempo real ---------- */
+.rt-banner {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 55;
+  display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 999px;
+  font-size: 13px; font-weight: 600; color: #1a1206;
+  background: linear-gradient(90deg, var(--accent), #f4cf7d);
+  border: none; box-shadow: 0 12px 32px -8px rgba(232,179,74,0.5);
+  animation: rise 0.4s cubic-bezier(0.22,1,0.36,1) both;
+}
+.rt-banner:hover { filter: brightness(1.05); }
+
 /* ============================================================
    Metodologia: check-in, semana, aprovação, playbooks,
    pipeline, loja, ranking, pauta, relatório
