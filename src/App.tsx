@@ -12,7 +12,7 @@ import {
 } from './forms'
 import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commercial'
 import { MyWeek, RewardsSection, RankingCard } from './week'
-import { FunnelCalculatorView } from './funnel'
+import { FunnelCalculatorView, FunnelBoard } from './funnel'
 import {
   PlaybooksView, AgendaCard, InsightsCard, NotesCard, BadgesRow, CommentsModal, ReportView,
 } from './extras'
@@ -216,13 +216,14 @@ function MenteeCard({ m, store, onOpen }: { m: Mentee; store: Store; onOpen: () 
 
 // ---------- App ----------
 type Role = 'advisor' | 'mentee'
-type View = 'overview' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'funnel'
+type View = 'overview' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'funnel' | 'funnelboard'
 
 const NAV: { id: View; label: string }[] = [
   { id: 'overview', label: 'Visão geral' },
   { id: 'mentees', label: 'Mentorados' },
   { id: 'sales', label: 'Comercial' },
   { id: 'campaigns', label: 'Campanhas' },
+  { id: 'funnelboard', label: 'Funil' },
   { id: 'playbooks', label: 'Playbooks' },
   { id: 'team', label: 'Equipe' },
 ]
@@ -301,6 +302,8 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut,
     delCampaign: id => setStore(s => ({ ...s, campaigns: s.campaigns.filter(c => c.id !== id) })),
     upGoal: g => setStore(s => ({ ...s, goals: upsert(s.goals, g) })),
     delGoal: id => setStore(s => ({ ...s, goals: s.goals.filter(g => g.id !== id) })),
+    upFunnel: fn => setStore(s => ({ ...s, funnels: upsert(s.funnels, fn) })),
+    delFunnel: id => setStore(s => ({ ...s, funnels: s.funnels.filter(x => x.id !== id) })),
     upCheckIn: c => setStore(s => ({ ...s, checkins: upsert(s.checkins, c) })),
     upPlaybook: p => setStore(s => ({ ...s, playbooks: upsert(s.playbooks, p) })),
     delPlaybook: id => setStore(s => ({ ...s, playbooks: s.playbooks.filter(p => p.id !== id) })),
@@ -443,6 +446,7 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut,
         )}
         {role === 'advisor' && view === 'sales' && <SalesView store={store} api={api} />}
         {role === 'advisor' && view === 'campaigns' && <CampaignsView store={store} api={api} />}
+        {role === 'advisor' && view === 'funnelboard' && <FunnelBoard store={store} />}
         {role === 'advisor' && view === 'playbooks' && <PlaybooksView store={store} api={api} />}
         {role === 'advisor' && view === 'team' && <TeamView store={store} api={api} />}
         {role === 'mentee' && (
@@ -450,7 +454,7 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut,
             ? (view === 'journey'
               ? <Journey m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />
               : view === 'funnel'
-                ? <FunnelCalculatorView m={menteeSelf} onLogout={menteeLogout} />
+                ? <FunnelCalculatorView m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />
                 : <MyWeek m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />)
             : <LoginView mentees={store.mentees} onLogin={login} />
         )}

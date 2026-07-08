@@ -14,7 +14,7 @@ import {
 
 const EMPTY_STORE: Store = {
   mentees: [], team: [], playbooks: [], sales: [], campaigns: [], goals: [],
-  checkins: [], redemptions: [], deals: [],
+  checkins: [], redemptions: [], deals: [], funnels: [],
 }
 
 // ---------- Tela cheia genérica (login / carregando) ----------

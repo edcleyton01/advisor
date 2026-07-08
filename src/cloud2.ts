@@ -7,7 +7,7 @@
 import { supabase } from './supabase'
 import type {
   Store, Mentee, TeamMember, Playbook, SaleEntry, Campaign,
-  MonthlyGoal, CheckIn, Redemption, Deal,
+  MonthlyGoal, CheckIn, Redemption, Deal, FunnelSnapshot,
 } from './data'
 
 export type Role = 'advisor' | 'team' | 'mentee'
@@ -29,6 +29,7 @@ interface MenteeSlice {
   checkins: CheckIn[]
   redemptions: Redemption[]
   deals: Deal[]
+  funnels: FunnelSnapshot[]
 }
 interface MenteeRow { id: string; data: MenteeSlice }
 interface SharedData { team: TeamMember[]; playbooks: Playbook[] }
@@ -66,6 +67,7 @@ function assembleStore(rows: MenteeRow[], shared: SharedData | null): Store {
     checkins: pick(s => s.checkins),
     redemptions: pick(s => s.redemptions),
     deals: pick(s => s.deals),
+    funnels: pick(s => s.funnels),
   }
 }
 
@@ -79,6 +81,7 @@ function sliceFor(store: Store, m: Mentee): MenteeSlice {
     checkins: mine(store.checkins),
     redemptions: mine(store.redemptions),
     deals: mine(store.deals),
+    funnels: mine(store.funnels),
   }
 }
 

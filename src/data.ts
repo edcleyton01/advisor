@@ -562,6 +562,50 @@ export const upsert = <T extends { id: string }>(arr: T[], item: T): T[] =>
 
 // ---------- Store & API (compartilhados entre views) ----------
 
+// ============================================================
+//  Funil do cliente — snapshots (histórico) por mentorado
+// ============================================================
+
+export interface FunnelSnapshot {
+  id: string
+  menteeId: string
+  date: string   // ISO — quando o funil foi registrado
+  leads: number
+  cpl: number
+  meetings: number
+  sales: number
+  ticket: number
+}
+
+// Métricas derivadas de um snapshot de funil (reutilizado na calculadora e no painel)
+export function funnelCalc(f: { leads: number; cpl: number; meetings: number; sales: number; ticket: number }) {
+  const invest = f.leads * f.cpl
+  const taxaAgend = f.leads ? f.meetings / f.leads : 0     // lead → reunião
+  const convReuniao = f.meetings ? f.sales / f.meetings : 0 // reunião → venda
+  const convGeral = f.leads ? f.sales / f.leads : 0         // lead → venda
+  const cac = f.sales ? invest / f.sales : 0
+  const receita = f.sales * f.ticket
+  const roas = invest ? receita / invest : 0
+  const lucro = receita - invest
+  return { invest, taxaAgend, convReuniao, convGeral, cac, receita, roas, lucro }
+}
+
+export const FUNNEL_SNAPSHOTS: FunnelSnapshot[] = [
+  // Ana — consultoria (funil de diagnóstico) melhorando ao longo dos meses
+  { id: 'fn1', menteeId: 'ana',    date: '2026-05-12', leads: 320, cpl: 42, meetings: 22, sales: 3, ticket: 68000 },
+  { id: 'fn2', menteeId: 'ana',    date: '2026-06-15', leads: 380, cpl: 40, meetings: 34, sales: 5, ticket: 72000 },
+  { id: 'fn3', menteeId: 'ana',    date: '2026-07-10', leads: 420, cpl: 38, meetings: 46, sales: 8, ticket: 72000 },
+  // Rafael — infoprodutos (funil de VSL → call)
+  { id: 'fn4', menteeId: 'rafael', date: '2026-06-08', leads: 900, cpl: 12, meetings: 40, sales: 6, ticket: 15000 },
+  { id: 'fn5', menteeId: 'rafael', date: '2026-07-09', leads: 1100, cpl: 11, meetings: 66, sales: 11, ticket: 15000 },
+  // Carol — saúde (funil de consulta → protocolo)
+  { id: 'fn6', menteeId: 'carol',  date: '2026-06-20', leads: 220, cpl: 8, meetings: 30, sales: 4, ticket: 4200 },
+  { id: 'fn7', menteeId: 'carol',  date: '2026-07-11', leads: 260, cpl: 7, meetings: 44, sales: 7, ticket: 4800 },
+  // Bruno — agência (funil social selling → contrato)
+  { id: 'fn8', menteeId: 'bruno',  date: '2026-06-18', leads: 140, cpl: 22, meetings: 26, sales: 3, ticket: 28000 },
+  { id: 'fn9', menteeId: 'bruno',  date: '2026-07-08', leads: 180, cpl: 20, meetings: 38, sales: 6, ticket: 28000 },
+]
+
 export interface Store {
   mentees: Mentee[]
   team: TeamMember[]
@@ -572,6 +616,7 @@ export interface Store {
   playbooks: Playbook[]
   redemptions: Redemption[]
   deals: Deal[]
+  funnels: FunnelSnapshot[]
 }
 
 export type ModalState =
@@ -609,6 +654,8 @@ export interface Api {
   delCampaign: (id: string) => void
   upGoal: (g: MonthlyGoal) => void
   delGoal: (id: string) => void
+  upFunnel: (f: FunnelSnapshot) => void
+  delFunnel: (id: string) => void
   upCheckIn: (c: CheckIn) => void
   upPlaybook: (p: Playbook) => void
   delPlaybook: (id: string) => void
@@ -1001,6 +1048,7 @@ export function insightsFor(store: Store, menteeId?: string): Insight[] {
 export const seedStore = (): Store => structuredClone({
   mentees: MENTEES, team: TEAM, sales: SALES, campaigns: CAMPAIGNS, goals: GOALS,
   checkins: CHECKINS, playbooks: PLAYBOOKS, redemptions: REDEMPTIONS, deals: DEALS,
+  funnels: FUNNEL_SNAPSHOTS,
 })
 
 // Aplica migrações a um store salvo (localStorage ou nuvem) sem apagar edições.
@@ -1012,6 +1060,7 @@ export function migrateStore(s: any): Store | null {
   if (!s.playbooks) s.playbooks = structuredClone(PLAYBOOKS)
   if (!s.redemptions) s.redemptions = structuredClone(REDEMPTIONS)
   if (!s.deals) s.deals = structuredClone(DEALS)
+  if (!s.funnels) s.funnels = structuredClone(FUNNEL_SNAPSHOTS)
   // novos templates da metodologia entram sem apagar edições existentes
   for (const p of PLAYBOOKS) {
     if (!s.playbooks.some((x: { id: string }) => x.id === p.id)) s.playbooks.push(structuredClone(p))
