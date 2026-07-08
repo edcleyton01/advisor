@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   PILLARS, ADVISOR, pillarById, levelForXp, actionXp, blockProgress, overallProgress, activeBlocks,
   pcolor, fmtDate, fmtBRL, todayIso, CURRENT_MONTH, monthFull, salesSummary, campaignCalc,
-  upsert, effectiveStreak, menteeHealth, blockFromPlaybook, seedStore, migrateStore,
+  upsert, effectiveStreak, menteeHealth, blockFromPlaybook, seedStore, migrateStore, buildAlerts,
   type Mentee, type PillarId, type ActionStatus, type ActionBlock, type Action,
   type Store, type ModalState, type Api, type CycleSnapshot, type Session,
 } from './data'
@@ -16,7 +16,7 @@ import { FunnelCalculatorView, FunnelBoard } from './funnel'
 import { ProgramDashboard } from './program'
 import { Attachments } from './attachments'
 import {
-  PlaybooksView, AgendaCard, InsightsCard, NotesCard, BadgesRow, CommentsModal, ReportView,
+  PlaybooksView, AgendaCard, InsightsCard, NotesCard, BadgesRow, CommentsModal, ReportView, AlertsView,
 } from './extras'
 
 // ---------- helpers ----------
@@ -223,10 +223,11 @@ function MenteeCard({ m, store, onOpen }: { m: Mentee; store: Store; onOpen: () 
 
 // ---------- App ----------
 type Role = 'advisor' | 'mentee'
-type View = 'overview' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'funnel' | 'funnelboard'
+type View = 'overview' | 'alerts' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'funnel' | 'funnelboard'
 
 const NAV: { id: View; label: string }[] = [
   { id: 'overview', label: 'Visão geral' },
+  { id: 'alerts', label: 'Alertas' },
   { id: 'evolution', label: 'Evolução' },
   { id: 'mentees', label: 'Mentorados' },
   { id: 'sales', label: 'Comercial' },
@@ -380,6 +381,7 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut,
   }
 
   const openMentee = (id: string) => { setSelected(id); setView('detail') }
+  const alertCount = buildAlerts(store).length
 
   return (
     <div className="app">
@@ -400,6 +402,7 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut,
                 className={`nav-item ${view === n.id || (n.id === 'mentees' && view === 'detail') ? 'active' : ''}`}
                 onClick={() => setView(n.id)}>
                 <span className="dot" /> {n.label}
+                {n.id === 'alerts' && alertCount > 0 && <span className="nav-badge">{alertCount}</span>}
               </button>
             ))
           ) : (
@@ -446,6 +449,7 @@ export default function App({ initialStore, persist, cloudEmail, onCloudSignOut,
 
       <main className="main">
         {role === 'advisor' && view === 'overview' && <Overview store={store} onOpen={openMentee} />}
+        {role === 'advisor' && view === 'alerts' && <AlertsView store={store} onOpenMentee={openMentee} />}
         {role === 'advisor' && view === 'mentees' && <MenteesList store={store} api={api} onOpen={openMentee} />}
         {role === 'advisor' && view === 'detail' && (
           current

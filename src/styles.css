@@ -527,6 +527,23 @@ tr:hover .row-tools, .camp:hover .row-tools { opacity: 1; }
 .attach-add:disabled { opacity: 0.5; pointer-events: none; }
 .attach-err { font-size: 11px; color: #f27979; }
 
+/* ---------- Alertas ---------- */
+.nav-badge {
+  margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: #f27979; color: #2a0d0d; font-size: 10.5px; font-weight: 750;
+  display: inline-grid; place-items: center; font-variant-numeric: tabular-nums;
+}
+.alert-card { display: flex; align-items: center; gap: 14px; cursor: pointer; transition: border-color 0.16s, transform 0.16s, background 0.16s; padding: 16px 18px; }
+.alert-card:hover { border-color: var(--line-2); transform: translateY(-1px); background: var(--surface-2); }
+.alert-card.risk { border-left: 3px solid #f27979; }
+.alert-card.warn { border-left: 3px solid #f0b36a; }
+.alert-ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font-size: 15px; flex-shrink: 0; }
+.alert-ic.risk { background: rgba(242,121,121,0.12); color: #f27979; border: 1px solid rgba(242,121,121,0.25); }
+.alert-ic.warn { background: rgba(240,179,106,0.1); color: #f0b36a; border: 1px solid rgba(240,179,106,0.22); }
+.alert-title { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+.alert-go { font-size: 12px; color: var(--text-3); flex-shrink: 0; }
+.alert-card:hover .alert-go { color: var(--text); }
+
 /* ============================================================
    Metodologia: check-in, semana, aprovação, playbooks,
    pipeline, loja, ranking, pauta, relatório

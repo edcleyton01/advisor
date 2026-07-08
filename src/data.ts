@@ -1052,6 +1052,64 @@ export function insightsFor(store: Store, menteeId?: string): Insight[] {
 }
 
 // ============================================================
+//  Alertas — o que precisa de ação agora (advisor)
+// ============================================================
+
+export type AlertKind = 'review' | 'overdue' | 'checkin'
+export interface Alert {
+  id: string
+  kind: AlertKind
+  severity: 'warn' | 'risk'
+  menteeId: string
+  menteeName: string
+  title: string
+  detail: string
+}
+
+const ALERT_META: Record<AlertKind, { icon: string; label: string }> = {
+  review:  { icon: '✓', label: 'Aprovação pendente' },
+  overdue: { icon: '⚠', label: 'Ação atrasada' },
+  checkin: { icon: '⟳', label: 'Check-in' },
+}
+export const alertMeta = (k: AlertKind) => ALERT_META[k]
+
+export function buildAlerts(store: Store): Alert[] {
+  const out: Alert[] = []
+  const wk = weekKey()
+  for (const m of store.mentees) {
+    const first = m.name.split(' ')[0]
+
+    const rev = reviewActions(m)
+    if (rev.length) out.push({
+      id: `rev-${m.id}`, kind: 'review', severity: 'warn', menteeId: m.id, menteeName: first,
+      title: `${rev.length} entrega${rev.length > 1 ? 's' : ''} aguardando aprovação`,
+      detail: rev.slice(0, 3).map(a => a.title).join(' · '),
+    })
+
+    const od = overdueActions(m)
+    if (od.length) out.push({
+      id: `od-${m.id}`, kind: 'overdue', severity: od.length >= 3 ? 'risk' : 'warn', menteeId: m.id, menteeName: first,
+      title: od.length > 1 ? `${od.length} ações atrasadas` : '1 ação atrasada',
+      detail: `mais antiga: “${od[0].title}” (${fmtDate(od[0].due)})`,
+    })
+
+    const hasCk = store.checkins.some(c => c.menteeId === m.id)
+    const thisWeek = store.checkins.some(c => c.menteeId === m.id && c.week === wk)
+    const lastWeek = store.checkins.some(c => c.menteeId === m.id && c.week === shiftWeek(wk, -1))
+    if (hasCk && !thisWeek && !lastWeek) out.push({
+      id: `ck-${m.id}`, kind: 'checkin', severity: 'risk', menteeId: m.id, menteeName: first,
+      title: 'Sem check-in há 2+ semanas', detail: 'ritmo em risco — vale um toque do guardião',
+    })
+    else if (hasCk && !thisWeek) out.push({
+      id: `ck-${m.id}`, kind: 'checkin', severity: 'warn', menteeId: m.id, menteeName: first,
+      title: 'Sem check-in nesta semana', detail: 'lembre o mentorado de registrar o check-in',
+    })
+  }
+  const rank = (s: Alert['severity']) => (s === 'risk' ? 0 : 1)
+  return out.sort((a, b) => rank(a.severity) - rank(b.severity))
+}
+
+// ============================================================
 //  Seed & migração do store (compartilhado por localStorage e nuvem)
 // ============================================================
 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   PILLARS, ADVISOR, DEAL_STAGES, pillarById, pcolor, fmtBRL, fmtDate, monthLabel, monthFull,
   CURRENT_MONTH, buildAgenda, insightsFor, computeBadges, actionXp, overallProgress, levelForXp,
-  effectiveStreak, salesSummary, campaignCalc, funnelById, monthActuals,
+  effectiveStreak, salesSummary, campaignCalc, funnelById, monthActuals, buildAlerts, alertMeta,
   type Mentee, type Store, type Api, type Deal, type DealStage,
 } from './data'
 
@@ -63,6 +63,51 @@ export function PlaybooksView({ store, api }: { store: Store; api: Api }) {
             )
           })}
         </div>
+      </div>
+    </>
+  )
+}
+
+// ---------- Central de alertas (advisor) ----------
+
+export function AlertsView({ store, onOpenMentee }: { store: Store; onOpenMentee: (id: string) => void }) {
+  const alerts = buildAlerts(store)
+  const risks = alerts.filter(a => a.severity === 'risk').length
+  return (
+    <>
+      <div className="topbar"><h1>Alertas</h1>
+        <div className="topbar-right"><span className="chip">{alerts.length} {alerts.length === 1 ? 'aviso' : 'avisos'}</span></div>
+      </div>
+      <div className="content page-enter">
+        <div className="eyebrow">O que precisa de você</div>
+        <div className="display" style={{ marginTop: 8 }}>{alerts.length ? 'Ação recomendada' : 'Tudo em dia ✓'}</div>
+        <div className="muted" style={{ marginTop: 8, fontSize: 13.5 }}>
+          {alerts.length
+            ? <>{risks > 0 && <><b style={{ color: '#f27979' }}>{risks} em risco</b> · </>}entregas para aprovar, ações atrasadas e check-ins pendentes.</>
+            : 'Nenhuma entrega pendente, atraso ou check-in em falta. Bom trabalho.'}
+        </div>
+
+        {alerts.length > 0 && (
+          <div className="grid stagger" style={{ marginTop: 24 }}>
+            {alerts.map(a => {
+              const meta = alertMeta(a.kind)
+              return (
+                <div key={a.id} className={`card alert-card ${a.severity}`} onClick={() => onOpenMentee(a.menteeId)}>
+                  <div className={`alert-ic ${a.severity}`}>{meta.icon}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
+                      <span className="alert-title">{a.title}</span>
+                      <span className="tag">{a.menteeName}</span>
+                      <span className="muted-3" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{meta.label}</span>
+                    </div>
+                    <div className="muted" style={{ fontSize: 12.5, marginTop: 5 }}>{a.detail}</div>
+                  </div>
+                  <span className="alert-go">abrir →</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </>
   )
