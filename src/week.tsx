@@ -125,7 +125,7 @@ export function AccessChip({ m }: { m: Mentee }) {
   return (
     <span className={`chip access-chip ${tone}`}
       title={a.expired ? `Acesso encerrado em ${fmtDate(a.endDate)}` : `Acesso ao programa até ${fmtDate(a.endDate)}`}>
-      ⌛ {a.expired ? 'expirado' : `${a.daysLeft} dias`}
+      ⌛ {a.expired ? 'acesso expirado' : `${a.daysLeft} ${a.daysLeft === 1 ? 'dia restante' : 'dias restantes'}`}
     </span>
   )
 }
