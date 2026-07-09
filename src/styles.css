@@ -572,15 +572,17 @@ tr:hover .row-tools, .camp:hover .row-tools { opacity: 1; }
 .quiz-opt.on .quiz-dot { background: var(--accent); box-shadow: 0 0 0 3px rgba(232,179,74,0.2); }
 .quiz-scale-ends { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-3); margin-top: 6px; font-family: var(--mono); }
 
-/* ---------- Card de tempo de acesso (mentorado) ---------- */
-.access-card { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-.access-card.warn { border-color: rgba(240,179,106,0.3); }
-.access-card.risk { border-color: rgba(242,121,121,0.35); background: rgba(242,121,121,0.06); }
-.access-big { display: flex; flex-direction: column; align-items: center; line-height: 1; min-width: 72px; }
-.access-big { font-size: 40px; font-weight: 720; letter-spacing: -0.03em; color: var(--accent); font-variant-numeric: tabular-nums; }
-.access-card.warn .access-big { color: #f0b36a; }
-.access-card.risk .access-big { color: #f27979; }
-.access-big span { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 6px; }
+/* ---------- Acesso ao programa (indicador na sidebar) ---------- */
+.side-access { padding: 10px 12px; margin: 6px 4px 0; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
+.side-access-row { display: flex; justify-content: space-between; align-items: baseline; }
+.side-access-row span { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-3); font-weight: 600; }
+.side-access-row b { font-size: 12px; font-weight: 650; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.side-access-bar { height: 3px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 8px; }
+.side-access-bar > i { display: block; height: 100%; border-radius: 999px; background: var(--good); }
+.side-access.warn b { color: #f0b36a; }
+.side-access.warn .side-access-bar > i { background: #f0b36a; }
+.side-access.exp b { color: #f27979; }
+.side-access.exp .side-access-bar > i { background: #f27979; width: 100% !important; }
 
 /* ============================================================
    Metodologia: check-in, semana, aprovação, playbooks,

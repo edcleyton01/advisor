@@ -433,6 +433,18 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
           )}
         </nav>
 
+        {role === 'mentee' && menteeSelf && (() => {
+          const a = accessInfo(menteeSelf)
+          if (!a) return null
+          const tone = a.expired ? 'exp' : a.daysLeft <= 15 ? 'warn' : ''
+          return (
+            <div className={`side-access ${tone}`} title={a.expired ? `Acesso encerrado em ${fmtDate(a.endDate)}` : `Acesso até ${fmtDate(a.endDate)}`}>
+              <div className="side-access-row"><span>⌛ acesso</span><b>{a.expired ? 'expirado' : `${a.daysLeft} dias`}</b></div>
+              <div className="side-access-bar"><i style={{ width: `${a.elapsedPct * 100}%` }} /></div>
+            </div>
+          )
+        })()}
+
         <div className="role-switch">
           {!lockedMentee && (
             <>
