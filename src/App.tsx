@@ -14,6 +14,7 @@ import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commerci
 import { MyWeek, RewardsSection, RankingCard } from './week'
 import { FunnelCalculatorView, FunnelBoard } from './funnel'
 import { ProgramDashboard } from './program'
+import { OnboardingQuiz } from './quiz'
 import { Attachments } from './attachments'
 import {
   PlaybooksView, AgendaCard, InsightsCard, NotesCard, BadgesRow, CommentsModal, ReportView, AlertsView,
@@ -223,7 +224,7 @@ function MenteeCard({ m, store, onOpen }: { m: Mentee; store: Store; onOpen: () 
 
 // ---------- App ----------
 type Role = 'advisor' | 'mentee'
-type View = 'overview' | 'alerts' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'funnel' | 'funnelboard'
+type View = 'overview' | 'alerts' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'funnel' | 'funnelboard' | 'quiz'
 
 const NAV: { id: View; label: string }[] = [
   { id: 'overview', label: 'Visão geral' },
@@ -422,14 +423,11 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
               <button className={`nav-item ${view === 'funnel' ? 'active' : ''}`} onClick={() => setView('funnel')}>
                 <span className="dot" /> Calculadora de funil
               </button>
+              <button className={`nav-item ${view === 'quiz' ? 'active' : ''}`} onClick={() => setView('quiz')}>
+                <span className="dot" /> Diagnóstico
+              </button>
             </>
           )}
-          <div className="nav-label" style={{ marginTop: 20 }}>Pilares</div>
-          {PILLARS.map(p => (
-            <div key={p.id} className="nav-item" style={{ cursor: 'default' }}>
-              <span className="pillar-dot" style={{ background: pcolor(p.hue) }} /> {p.short}
-            </div>
-          ))}
         </nav>
 
         <div className="role-switch">
@@ -474,7 +472,9 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
               ? <Journey m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />
               : view === 'funnel'
                 ? <FunnelCalculatorView m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />
-                : <MyWeek m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />)
+                : view === 'quiz'
+                  ? <OnboardingQuiz m={menteeSelf} api={api} onLogout={menteeLogout} onOpenPlan={() => setView('week')} />
+                  : <MyWeek m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />)
             : <LoginView mentees={store.mentees} onLogin={login} />
         )}
       </main>

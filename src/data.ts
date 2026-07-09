@@ -138,6 +138,7 @@ export interface Mentee {
   sessions: Session[]
   cycleHistory?: CycleSnapshot[]
   privateNotes?: string // visível apenas para advisor/equipe
+  onboardedAt?: string  // quando o mentorado concluiu o diagnóstico de onboarding
 }
 
 // ---------- Helpers de cálculo ----------
@@ -163,6 +164,69 @@ export function overallProgress(m: Mentee) {
   const all = activeBlocks(m).flatMap(b => b.actions)
   const done = all.filter(a => a.status === 'done').length
   return { done, total: all.length, pct: all.length ? done / all.length : 0 }
+}
+
+// ============================================================
+//  Quiz de onboarding — autodiagnóstico por pilar
+// ============================================================
+
+export interface QuizQuestion { id: string; pillar: PillarId; text: string }
+
+// Escala de concordância 0–4 (maior = mais maduro)
+export const QUIZ_SCALE = ['Discordo totalmente', 'Discordo', 'Neutro', 'Concordo', 'Concordo totalmente']
+
+export const QUIZ: QuizQuestion[] = [
+  { id: 'q_b1', pillar: 'branding',  text: 'Tenho uma proposta de valor clara que me diferencia dos concorrentes.' },
+  { id: 'q_b2', pillar: 'branding',  text: 'Meu público sabe exatamente para quem eu sirvo e o que entrego.' },
+  { id: 'q_b3', pillar: 'branding',  text: 'Minha marca transmite autoridade (site, redes e materiais consistentes).' },
+  { id: 'q_m1', pillar: 'marketing', text: 'Gero demanda de forma previsível, sem depender só de indicação.' },
+  { id: 'q_m2', pillar: 'marketing', text: 'Publico conteúdo com constância e uma linha editorial definida.' },
+  { id: 'q_m3', pillar: 'marketing', text: 'Tenho uma isca/oferta que captura contatos qualificados.' },
+  { id: 'q_s1', pillar: 'sales',     text: 'Tenho um processo comercial definido — não vendo no improviso.' },
+  { id: 'q_s2', pillar: 'sales',     text: 'Sei minha taxa de conversão e acompanho meu funil de perto.' },
+  { id: 'q_s3', pillar: 'sales',     text: 'Tenho um método claro para conduzir e fechar reuniões de venda.' },
+  { id: 'q_p1', pillar: 'products',  text: 'Minha oferta está organizada em uma escada de valor clara.' },
+  { id: 'q_p2', pillar: 'products',  text: 'Tenho um produto high ticket bem definido e posicionado.' },
+  { id: 'q_p3', pillar: 'products',  text: 'Minha entrega é padronizada e escalável — não depende só de mim.' },
+  { id: 'q_a1', pillar: 'ai',        text: 'Uso IA para ganhar tempo em tarefas repetitivas do negócio.' },
+  { id: 'q_a2', pillar: 'ai',        text: 'Tenho processos automatizados que rodam sem eu tocar.' },
+  { id: 'q_a3', pillar: 'ai',        text: 'Sei onde a IA pode alavancar meu resultado no próximo passo.' },
+]
+
+// Primeira ação fundamental de cada pilar (base do plano de onboarding)
+export const ONBOARDING_ACTIONS: Record<PillarId, { title: string; xp: number }> = {
+  branding:  { title: 'Escrever sua proposta única de valor (PUV) em 1 frase', xp: 40 },
+  marketing: { title: 'Definir seus 3 pilares de conteúdo e uma isca de captura', xp: 50 },
+  sales:     { title: 'Mapear seu funil atual e escrever um roteiro de reunião', xp: 50 },
+  products:  { title: 'Organizar suas ofertas em uma escada de valor com o high ticket no topo', xp: 60 },
+  ai:        { title: 'Listar 3 tarefas repetitivas e testar a IA em uma delas', xp: 40 },
+}
+
+// Calcula o score 0–10 por pilar a partir das respostas
+export function quizScores(answers: Record<string, number>): Record<PillarId, number> {
+  const out = {} as Record<PillarId, number>
+  for (const p of PILLARS) {
+    const vals = QUIZ.filter(q => q.pillar === p.id).map(q => answers[q.id]).filter(v => v !== undefined)
+    out[p.id] = vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length / 4) * 10) : 0
+  }
+  return out
+}
+
+// Monta o bloco "Plano de Onboarding" priorizando os pilares mais fracos
+export function buildOnboardingBlock(scores: Record<PillarId, number>, idGen: () => string): ActionBlock {
+  const ranked = [...PILLARS].sort((a, b) => scores[a.id] - scores[b.id])
+  const weak = ranked.filter(p => scores[p.id] < 7)
+  const chosen = (weak.length >= 2 ? weak : ranked.slice(0, 2)).slice(0, 5)
+  const base = new Date()
+  const actions: Action[] = chosen.map((p, i) => {
+    const due = new Date(base); due.setDate(due.getDate() + (i + 1) * 3)
+    return { id: idGen(), title: ONBOARDING_ACTIONS[p.id].title, xp: ONBOARDING_ACTIONS[p.id].xp, status: 'todo', due: isoLocal(due) }
+  })
+  return {
+    id: idGen(), pillar: chosen[0].id, title: 'Plano de Onboarding',
+    period: 'Início · primeiras 2 semanas',
+    rewardLabel: 'Desbloqueia: primeira mentoria de alinhamento', rewardXp: 100, actions,
+  }
 }
 
 // ---------- Dados de exemplo ----------

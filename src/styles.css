@@ -555,6 +555,23 @@ tr:hover .row-tools, .camp:hover .row-tools { opacity: 1; }
 }
 .rt-banner:hover { filter: brightness(1.05); }
 
+/* ---------- Quiz de onboarding ---------- */
+.quiz-intro { max-width: 640px; padding: 12px 0; }
+.quiz-progress { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 16px; }
+.quiz-progress > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), #f4cf7d); transition: width 0.4s cubic-bezier(0.22,1,0.36,1); }
+
+.quiz-group { margin-top: 22px; }
+.quiz-group-head { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 650; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+.quiz-q { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin-bottom: 10px; }
+.quiz-q-text { font-size: 13.5px; font-weight: 500; line-height: 1.45; }
+.quiz-scale { display: flex; gap: 8px; margin-top: 12px; }
+.quiz-opt { flex: 1; height: 34px; border-radius: 9px; border: 1px solid var(--line-2); background: var(--bg-2); display: grid; place-items: center; transition: all 0.14s; }
+.quiz-opt:hover { border-color: rgba(232,179,74,0.4); }
+.quiz-opt .quiz-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--line-2); transition: all 0.14s; }
+.quiz-opt.on { border-color: var(--accent); background: var(--accent-dim); }
+.quiz-opt.on .quiz-dot { background: var(--accent); box-shadow: 0 0 0 3px rgba(232,179,74,0.2); }
+.quiz-scale-ends { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-3); margin-top: 6px; font-family: var(--mono); }
+
 /* ============================================================
    Metodologia: check-in, semana, aprovação, playbooks,
    pipeline, loja, ranking, pauta, relatório
