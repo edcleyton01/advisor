@@ -572,6 +572,16 @@ tr:hover .row-tools, .camp:hover .row-tools { opacity: 1; }
 .quiz-opt.on .quiz-dot { background: var(--accent); box-shadow: 0 0 0 3px rgba(232,179,74,0.2); }
 .quiz-scale-ends { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-3); margin-top: 6px; font-family: var(--mono); }
 
+/* ---------- Card de tempo de acesso (mentorado) ---------- */
+.access-card { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.access-card.warn { border-color: rgba(240,179,106,0.3); }
+.access-card.risk { border-color: rgba(242,121,121,0.35); background: rgba(242,121,121,0.06); }
+.access-big { display: flex; flex-direction: column; align-items: center; line-height: 1; min-width: 72px; }
+.access-big { font-size: 40px; font-weight: 720; letter-spacing: -0.03em; color: var(--accent); font-variant-numeric: tabular-nums; }
+.access-card.warn .access-big { color: #f0b36a; }
+.access-card.risk .access-big { color: #f27979; }
+.access-big span { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 6px; }
+
 /* ============================================================
    Metodologia: check-in, semana, aprovação, playbooks,
    pipeline, loja, ranking, pauta, relatório

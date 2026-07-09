@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   activeBlocks, todayIso, weekKey, shiftWeek, effectiveStreak, actionXp, overallProgress,
-  levelForXp, spentXp, pillarById, pcolor, fmtDate,
+  levelForXp, spentXp, pillarById, pcolor, fmtDate, accessInfo,
   type Mentee, type Store, type Api, type Action, type ActionBlock, type CheckIn,
 } from './data'
 import { Attachments } from './attachments'
@@ -117,6 +117,29 @@ function TaskGroup({ title, hint, items, m, api, overdue }: {
   )
 }
 
+// ---------- Tempo de acesso ao programa ----------
+export function AccessCard({ m }: { m: Mentee }) {
+  const a = accessInfo(m)
+  if (!a) return null
+  const tone = a.expired ? 'risk' : a.daysLeft <= 15 ? 'warn' : 'ok'
+  return (
+    <div className={`card access-card ${tone}`} style={{ marginTop: 18 }}>
+      <div className="access-big">{a.expired ? '0' : a.daysLeft}<span>{a.daysLeft === 1 && !a.expired ? 'dia' : 'dias'}</span></div>
+      <div style={{ flex: 1, minWidth: 200 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 600 }}>
+          {a.expired ? 'Seu acesso ao programa terminou' : `Você tem ${a.daysLeft} ${a.daysLeft === 1 ? 'dia' : 'dias'} de acesso ao acompanhamento`}
+        </div>
+        <div className="muted-3" style={{ fontSize: 12, marginTop: 4 }}>
+          {a.expired ? `Encerrado em ${fmtDate(a.endDate)} — fale com a equipe para renovar.` : `Acesso até ${fmtDate(a.endDate)} · aproveite ao máximo cada semana.`}
+        </div>
+        <div className={`bar ${a.expired ? '' : a.daysLeft <= 15 ? 'accent' : 'good'}`} style={{ marginTop: 11 }}>
+          <i style={{ width: `${a.elapsedPct * 100}%` }} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function MyWeek({ m, store, api, onLogout }: { m: Mentee; store: Store; api: Api; onLogout: () => void }) {
   const t = todayIso()
   const weekEnd = shiftWeek(weekKey(), 1) // próxima segunda
@@ -141,6 +164,8 @@ export function MyWeek({ m, store, api, onLogout }: { m: Mentee; store: Store; a
       <div className="content page-enter">
         <div className="eyebrow">Semana de {fmtDate(weekKey())}</div>
         <div className="display" style={{ marginTop: 8, fontSize: 26 }}>O que importa agora, {m.name.split(' ')[0]}.</div>
+
+        <AccessCard m={m} />
 
         <div style={{ marginTop: 22 }}>
           <CheckInCard m={m} store={store} api={api} />

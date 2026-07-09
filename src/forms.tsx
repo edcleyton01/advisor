@@ -106,6 +106,12 @@ export function MenteeForm({ initial, onSave, onClose }: { initial?: Mentee; onS
         <Field label="Streak (semanas)">
           <input className="in" type="number" min={0} value={f.streak} onChange={e => set('streak', Number(e.target.value) || 0)} />
         </Field>
+        <Field label="Data de entrada">
+          <input className="in" type="date" value={f.startDate} onChange={e => set('startDate', e.target.value)} />
+        </Field>
+        <Field label="Acesso ao programa até">
+          <input className="in" type="date" value={f.accessUntil ?? ''} onChange={e => set('accessUntil', e.target.value || undefined)} />
+        </Field>
         <div className="span2">
           <div className="field" style={{ marginBottom: 8 }}><span>Diagnóstico por pilar · base → atual (0–10)</span></div>
           <div className="score-grid">

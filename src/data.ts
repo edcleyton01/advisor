@@ -139,6 +139,7 @@ export interface Mentee {
   cycleHistory?: CycleSnapshot[]
   privateNotes?: string // visível apenas para advisor/equipe
   onboardedAt?: string  // quando o mentorado concluiu o diagnóstico de onboarding
+  accessUntil?: string  // até quando o mentorado tem acesso ao programa (ISO)
 }
 
 // ---------- Helpers de cálculo ----------
@@ -244,6 +245,7 @@ export const MENTEES: Mentee[] = [
     stage: 'Escalando',
     macroGoal: 'Consolidar autoridade nacional e fechar 2 projetos de consultoria por mês sem depender de indicações.',
     startDate: d('2026-04-01'),
+    accessUntil: d('2026-10-01'),
     cycle: 'Ciclo 1 · Fundação',
     streak: 5,
     scores: {
@@ -301,6 +303,7 @@ export const MENTEES: Mentee[] = [
     stage: 'Estruturando',
     macroGoal: 'Escalar com funil perpétuo e turmas trimestrais, mantendo a mentoria 1:1 como topo high ticket.',
     startDate: d('2026-05-01'),
+    accessUntil: d('2026-11-01'),
     cycle: 'Ciclo 1 · Fundação',
     streak: 2,
     scores: {
@@ -347,6 +350,7 @@ export const MENTEES: Mentee[] = [
     stage: 'Início',
     macroGoal: 'Sair da agenda lotada de consultas avulsas e migrar para protocolos de acompanhamento high ticket.',
     startDate: d('2026-06-01'),
+    accessUntil: d('2026-12-01'),
     cycle: 'Ciclo 1 · Fundação',
     streak: 1,
     scores: {
@@ -384,6 +388,7 @@ export const MENTEES: Mentee[] = [
     stage: 'Estruturando',
     macroGoal: 'Reposicionar a agência para contratos anuais high ticket e sair da guerra de preço por job avulso.',
     startDate: d('2026-05-15'),
+    accessUntil: d('2026-11-15'),
     cycle: 'Ciclo 1 · Fundação',
     streak: 3,
     scores: {
@@ -1175,6 +1180,22 @@ export function buildAlerts(store: Store): Alert[] {
   }
   const rank = (s: Alert['severity']) => (s === 'risk' ? 0 : 1)
   return out.sort((a, b) => rank(a.severity) - rank(b.severity))
+}
+
+// ---------- Tempo de acesso ao programa ----------
+
+export interface AccessInfo { daysLeft: number; totalDays: number; elapsedPct: number; expired: boolean; endDate: string }
+
+export function accessInfo(m: Mentee): AccessInfo | null {
+  if (!m.accessUntil) return null
+  const DAY = 86400000
+  const today = new Date(todayIso()).getTime()
+  const end = new Date(m.accessUntil).getTime()
+  const start = new Date(m.startDate).getTime()
+  const daysLeft = Math.ceil((end - today) / DAY)
+  const totalDays = Math.max(1, Math.round((end - start) / DAY))
+  const elapsedPct = Math.max(0, Math.min(1, (today - start) / (end - start || DAY)))
+  return { daysLeft, totalDays, elapsedPct, expired: daysLeft < 0, endDate: m.accessUntil }
 }
 
 // ============================================================

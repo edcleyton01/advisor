@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   PILLARS, ADVISOR, pillarById, levelForXp, actionXp, blockProgress, overallProgress, activeBlocks,
   pcolor, fmtDate, fmtBRL, todayIso, CURRENT_MONTH, monthFull, salesSummary, campaignCalc,
-  upsert, effectiveStreak, menteeHealth, blockFromPlaybook, seedStore, migrateStore, buildAlerts,
+  upsert, effectiveStreak, menteeHealth, blockFromPlaybook, seedStore, migrateStore, buildAlerts, accessInfo,
   type Mentee, type PillarId, type ActionStatus, type ActionBlock, type Action,
   type Store, type ModalState, type Api, type CycleSnapshot, type Session,
 } from './data'
@@ -755,6 +755,12 @@ function Detail({ m, store, api, onBack, cloudMode }: { m: Mentee; store: Store;
               {m.onboardedAt
                 ? <span className="tag good" title="Diagnóstico de onboarding concluído pelo mentorado">✓ Onboarding {fmtDate(m.onboardedAt)}</span>
                 : <span className="tag warn" title="O mentorado ainda não fez o diagnóstico de onboarding">◔ Diagnóstico pendente</span>}
+              {(() => {
+                const a = accessInfo(m)
+                return a ? <span className={`tag ${a.expired ? 'warn' : 'good'}`} title={`Acesso até ${fmtDate(a.endDate)}`}>
+                  {a.expired ? '⌛ Acesso encerrado' : `⌛ ${a.daysLeft}d de acesso`}
+                </span> : null
+              })()}
               {squad.map(t => <span key={t.id} className="tag" title={t.role}>◈ {t.name.split(' ')[0]}</span>)}
             </div>
           </div>
