@@ -11,7 +11,7 @@ import {
   PlaybookForm, ApplyPlaybookModal, DealForm, CycleCloseForm, MenteeLoginForm, RewardForm,
 } from './forms'
 import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commercial'
-import { MyWeek, RewardsSection, RankingCard } from './week'
+import { MyWeek, RewardsSection, RankingCard, AccessChip } from './week'
 import { FunnelCalculatorView, FunnelBoard } from './funnel'
 import { ProgramDashboard } from './program'
 import { OnboardingQuiz } from './quiz'
@@ -432,18 +432,6 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
             </>
           )}
         </nav>
-
-        {role === 'mentee' && menteeSelf && (() => {
-          const a = accessInfo(menteeSelf)
-          if (!a) return null
-          const tone = a.expired ? 'exp' : a.daysLeft <= 15 ? 'warn' : ''
-          return (
-            <div className={`side-access ${tone}`} title={a.expired ? `Acesso encerrado em ${fmtDate(a.endDate)}` : `Acesso até ${fmtDate(a.endDate)}`}>
-              <div className="side-access-row"><span>⌛ acesso</span><b>{a.expired ? 'expirado' : `${a.daysLeft} dias`}</b></div>
-              <div className="side-access-bar"><i style={{ width: `${a.elapsedPct * 100}%` }} /></div>
-            </div>
-          )
-        })()}
 
         <div className="role-switch">
           {!lockedMentee && (
@@ -903,6 +891,7 @@ function Journey({ m, store, api, onLogout }: { m: Mentee; store: Store; api: Ap
     <>
       <div className="topbar"><h1>Minha jornada</h1>
         <div className="topbar-right">
+          <AccessChip m={m} />
           <span className="chip">{m.cycle}</span>
           <div className="avatar" style={{ width: 34, height: 34, fontSize: 12 }}>{m.initials}</div>
           <button className="btn ghost" style={{ padding: '7px 12px', fontSize: 12 }} onClick={onLogout}>Trocar perfil</button>

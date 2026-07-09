@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   activeBlocks, todayIso, weekKey, shiftWeek, effectiveStreak, actionXp, overallProgress,
-  levelForXp, spentXp, pillarById, pcolor, fmtDate,
+  levelForXp, spentXp, pillarById, pcolor, fmtDate, accessInfo,
   type Mentee, type Store, type Api, type Action, type ActionBlock, type CheckIn,
 } from './data'
 import { Attachments } from './attachments'
@@ -117,6 +117,19 @@ function TaskGroup({ title, hint, items, m, api, overdue }: {
   )
 }
 
+// Chip discreto de tempo de acesso (topbar do mentorado)
+export function AccessChip({ m }: { m: Mentee }) {
+  const a = accessInfo(m)
+  if (!a) return null
+  const tone = a.expired ? 'exp' : a.daysLeft <= 15 ? 'warn' : ''
+  return (
+    <span className={`chip access-chip ${tone}`}
+      title={a.expired ? `Acesso encerrado em ${fmtDate(a.endDate)}` : `Acesso ao programa até ${fmtDate(a.endDate)}`}>
+      ⌛ {a.expired ? 'expirado' : `${a.daysLeft} dias`}
+    </span>
+  )
+}
+
 export function MyWeek({ m, store, api, onLogout }: { m: Mentee; store: Store; api: Api; onLogout: () => void }) {
   const t = todayIso()
   const weekEnd = shiftWeek(weekKey(), 1) // próxima segunda
@@ -133,6 +146,7 @@ export function MyWeek({ m, store, api, onLogout }: { m: Mentee; store: Store; a
     <>
       <div className="topbar"><h1>Minha semana</h1>
         <div className="topbar-right">
+          <AccessChip m={m} />
           <span className="chip">{doneCount}/{items.length} ações · {Math.round(prog.pct * 100)}%</span>
           <div className="avatar" style={{ width: 34, height: 34, fontSize: 12 }}>{m.initials}</div>
           <button className="btn ghost" style={{ padding: '7px 12px', fontSize: 12 }} onClick={onLogout}>Trocar perfil</button>

@@ -3,6 +3,7 @@ import {
   PILLARS, QUIZ, QUIZ_SCALE, quizScores, buildOnboardingBlock, pillarById, pcolor, todayIso,
   type Mentee, type Api,
 } from './data'
+import { AccessChip } from './week'
 
 const uid = () => Math.random().toString(36).slice(2, 10)
 
@@ -54,6 +55,7 @@ export function OnboardingQuiz({ m, api, onLogout, onOpenPlan }: {
   const Head = ({ chip }: { chip: string }) => (
     <div className="topbar"><h1>Diagnóstico de onboarding</h1>
       <div className="topbar-right">
+        <AccessChip m={m} />
         <span className="chip">{chip}</span>
         <div className="avatar" style={{ width: 34, height: 34, fontSize: 12 }}>{m.initials}</div>
         <button className="btn ghost" style={{ padding: '7px 12px', fontSize: 12 }} onClick={onLogout}>Trocar perfil</button>

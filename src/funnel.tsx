@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { funnelCalc, fmtBRL, fmtDate, todayIso, type Mentee, type Store, type Api, type FunnelSnapshot } from './data'
+import { AccessChip } from './week'
 
 // ============================================================
 //  Calculadora de Funil + histórico (mentorado) e painel (advisor)
@@ -96,6 +97,7 @@ export function FunnelCalculatorView({ m, store, api, onLogout }: {
     <>
       <div className="topbar"><h1>Calculadora de funil</h1>
         <div className="topbar-right">
+          <AccessChip m={m} />
           <span className="chip">salvo na nuvem</span>
           <div className="avatar" style={{ width: 34, height: 34, fontSize: 12 }}>{m.initials}</div>
           <button className="btn ghost" style={{ padding: '7px 12px', fontSize: 12 }} onClick={onLogout}>Trocar perfil</button>
