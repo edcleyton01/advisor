@@ -8,7 +8,7 @@ import {
 } from './data'
 import {
   MenteeForm, BlockForm, ActionForm, SessionForm, TeamForm, SaleForm, CampaignForm, GoalForm,
-  PlaybookForm, ApplyPlaybookModal, DealForm, CycleCloseForm, MenteeLoginForm,
+  PlaybookForm, ApplyPlaybookModal, DealForm, CycleCloseForm, MenteeLoginForm, RewardForm,
 } from './forms'
 import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commercial'
 import { MyWeek, RewardsSection, RankingCard } from './week'
@@ -17,7 +17,7 @@ import { ProgramDashboard } from './program'
 import { OnboardingQuiz } from './quiz'
 import { Attachments } from './attachments'
 import {
-  PlaybooksView, AgendaCard, InsightsCard, NotesCard, BadgesRow, CommentsModal, ReportView, AlertsView,
+  PlaybooksView, AgendaCard, InsightsCard, NotesCard, BadgesRow, CommentsModal, ReportView, AlertsView, RewardsAdmin,
 } from './extras'
 
 // ---------- helpers ----------
@@ -224,7 +224,7 @@ function MenteeCard({ m, store, onOpen }: { m: Mentee; store: Store; onOpen: () 
 
 // ---------- App ----------
 type Role = 'advisor' | 'mentee'
-type View = 'overview' | 'alerts' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'funnel' | 'funnelboard' | 'quiz'
+type View = 'overview' | 'alerts' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'funnel' | 'funnelboard' | 'quiz' | 'rewards'
 
 const NAV: { id: View; label: string }[] = [
   { id: 'overview', label: 'Visão geral' },
@@ -235,6 +235,7 @@ const NAV: { id: View; label: string }[] = [
   { id: 'campaigns', label: 'Campanhas' },
   { id: 'funnelboard', label: 'Funil' },
   { id: 'playbooks', label: 'Playbooks' },
+  { id: 'rewards', label: 'Recompensas' },
   { id: 'team', label: 'Equipe' },
 ]
 
@@ -320,6 +321,8 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
     delGoal: id => setStore(s => ({ ...s, goals: s.goals.filter(g => g.id !== id) })),
     upFunnel: fn => setStore(s => ({ ...s, funnels: upsert(s.funnels, fn) })),
     delFunnel: id => setStore(s => ({ ...s, funnels: s.funnels.filter(x => x.id !== id) })),
+    upReward: r => setStore(s => ({ ...s, rewards: upsert(s.rewards, r) })),
+    delReward: id => setStore(s => ({ ...s, rewards: s.rewards.filter(x => x.id !== id) })),
     upCheckIn: c => setStore(s => ({ ...s, checkins: upsert(s.checkins, c) })),
     upPlaybook: p => setStore(s => ({ ...s, playbooks: upsert(s.playbooks, p) })),
     delPlaybook: id => setStore(s => ({ ...s, playbooks: s.playbooks.filter(p => p.id !== id) })),
@@ -464,6 +467,7 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
         {role === 'advisor' && view === 'campaigns' && <CampaignsView store={store} api={api} />}
         {role === 'advisor' && view === 'funnelboard' && <FunnelBoard store={store} />}
         {role === 'advisor' && view === 'evolution' && <ProgramDashboard store={store} />}
+        {role === 'advisor' && view === 'rewards' && <RewardsAdmin store={store} api={api} />}
         {role === 'advisor' && view === 'playbooks' && <PlaybooksView store={store} api={api} />}
         {role === 'advisor' && view === 'team' && <TeamView store={store} api={api} />}
         {role === 'mentee' && (
@@ -534,6 +538,9 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
       })()}
       {modal?.kind === 'menteeLogin' && (
         <MenteeLoginForm menteeId={modal.menteeId} menteeName={modal.menteeName} onClose={() => setModal(null)} />
+      )}
+      {modal?.kind === 'reward' && (
+        <RewardForm initial={modal.reward} onSave={api.upReward} onClose={() => setModal(null)} />
       )}
     </div>
   )

@@ -5,6 +5,7 @@ import {
   type Mentee, type ActionBlock, type Action, type Session, type TeamMember,
   type SaleEntry, type Campaign, type PillarId, type FunnelId, type CampaignStatus,
   type MonthlyGoal, type Playbook, type PlaybookAction, type Deal, type DealStage, type Store,
+  type RewardItem,
 } from './data'
 import { createMenteeLogin, createTeamLogin } from './cloud2'
 
@@ -528,6 +529,41 @@ export function CycleCloseForm({ m, onConfirm, onClose }: {
         <button className="btn ghost" onClick={onClose}>Cancelar</button>
         <button className="btn" disabled={!ok} onClick={() => { onConfirm(name.trim()); onClose() }}>Encerrar e iniciar novo ciclo</button>
       </div>
+    </Modal>
+  )
+}
+
+// ---------- Recompensa (catálogo) ----------
+
+export function RewardForm({ initial, onSave, onClose }: {
+  initial?: RewardItem; onSave: (r: RewardItem) => void; onClose: () => void
+}) {
+  const [f, setF] = useState<RewardItem>(() => initial ? structuredClone(initial) : ({
+    id: uid(), icon: '✦', label: '', description: '', costXp: 300,
+  }))
+  const ok = f.label.trim().length > 1 && f.costXp > 0
+  const save = () => { onSave({ ...f, icon: f.icon.trim() || '✦' }); onClose() }
+  return (
+    <Modal title={initial ? 'Editar recompensa' : 'Nova recompensa'} onClose={onClose}>
+      <div className="form-grid">
+        <Field label="Ícone / emoji">
+          <input className="in" maxLength={4} value={f.icon} onChange={e => setF(p => ({ ...p, icon: e.target.value }))}
+            style={{ maxWidth: 90, textAlign: 'center', fontSize: 18 }} />
+        </Field>
+        <Field label="Custo (XP)">
+          <input className="in" type="number" min={0} value={f.costXp} onChange={e => setF(p => ({ ...p, costXp: Number(e.target.value) || 0 }))} />
+        </Field>
+        <Field label="Nome da recompensa" span2>
+          <input className="in" value={f.label} onChange={e => setF(p => ({ ...p, label: e.target.value }))} placeholder="Ex.: Call extra 1:1 com o mentor" />
+        </Field>
+        <Field label="Descrição" span2>
+          <textarea className="in" rows={2} value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} placeholder="O que o mentorado ganha ao resgatar" />
+        </Field>
+        <div className="span2 calc-preview">
+          Prévia: <b style={{ fontSize: 16 }}>{f.icon}</b> {f.label || 'nome da recompensa'} · <span style={{ color: 'var(--accent)' }}>{f.costXp} XP</span>
+        </div>
+      </div>
+      <Foot onClose={onClose} onSave={save} ok={ok} />
     </Modal>
   )
 }

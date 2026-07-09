@@ -691,6 +691,7 @@ export interface Store {
   redemptions: Redemption[]
   deals: Deal[]
   funnels: FunnelSnapshot[]
+  rewards: RewardItem[]
 }
 
 export type ModalState =
@@ -709,6 +710,7 @@ export type ModalState =
   | { kind: 'comments'; menteeId: string; blockId: string; actionId: string }
   | { kind: 'report'; menteeId: string }
   | { kind: 'menteeLogin'; menteeId: string; menteeName: string }
+  | { kind: 'reward'; reward?: RewardItem }
 
 export interface Api {
   open: (m: ModalState) => void
@@ -730,6 +732,8 @@ export interface Api {
   delGoal: (id: string) => void
   upFunnel: (f: FunnelSnapshot) => void
   delFunnel: (id: string) => void
+  upReward: (r: RewardItem) => void
+  delReward: (id: string) => void
   upCheckIn: (c: CheckIn) => void
   upPlaybook: (p: Playbook) => void
   delPlaybook: (id: string) => void
@@ -947,9 +951,9 @@ export const REDEMPTIONS: Redemption[] = [
   { id: 'rd1', menteeId: 'ana', rewardId: 'r3', date: '2026-06-20', status: 'delivered' },
 ]
 
-export const spentXp = (menteeId: string, redemptions: Redemption[]) =>
+export const spentXp = (menteeId: string, redemptions: Redemption[], rewards: RewardItem[]) =>
   redemptions.filter(r => r.menteeId === menteeId)
-    .reduce((s, r) => s + (REWARD_CATALOG.find(c => c.id === r.rewardId)?.costXp ?? 0), 0)
+    .reduce((s, r) => s + (rewards.find(c => c.id === r.rewardId)?.costXp ?? 0), 0)
 
 // ============================================================
 //  Pipeline high ticket (oportunidades em negociação)
@@ -1180,7 +1184,7 @@ export function buildAlerts(store: Store): Alert[] {
 export const seedStore = (): Store => structuredClone({
   mentees: MENTEES, team: TEAM, sales: SALES, campaigns: CAMPAIGNS, goals: GOALS,
   checkins: CHECKINS, playbooks: PLAYBOOKS, redemptions: REDEMPTIONS, deals: DEALS,
-  funnels: FUNNEL_SNAPSHOTS,
+  funnels: FUNNEL_SNAPSHOTS, rewards: REWARD_CATALOG,
 })
 
 // Aplica migrações a um store salvo (localStorage ou nuvem) sem apagar edições.
@@ -1193,6 +1197,7 @@ export function migrateStore(s: any): Store | null {
   if (!s.redemptions) s.redemptions = structuredClone(REDEMPTIONS)
   if (!s.deals) s.deals = structuredClone(DEALS)
   if (!s.funnels) s.funnels = structuredClone(FUNNEL_SNAPSHOTS)
+  if (!s.rewards) s.rewards = structuredClone(REWARD_CATALOG)
   // novos templates da metodologia entram sem apagar edições existentes
   for (const p of PLAYBOOKS) {
     if (!s.playbooks.some((x: { id: string }) => x.id === p.id)) s.playbooks.push(structuredClone(p))

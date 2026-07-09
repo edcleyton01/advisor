@@ -7,7 +7,7 @@
 import { supabase } from './supabase'
 import type {
   Store, Mentee, TeamMember, Playbook, SaleEntry, Campaign,
-  MonthlyGoal, CheckIn, Redemption, Deal, FunnelSnapshot,
+  MonthlyGoal, CheckIn, Redemption, Deal, FunnelSnapshot, RewardItem,
 } from './data'
 
 export type Role = 'advisor' | 'team' | 'mentee'
@@ -32,7 +32,7 @@ interface MenteeSlice {
   funnels: FunnelSnapshot[]
 }
 interface MenteeRow { id: string; data: MenteeSlice }
-interface SharedData { team: TeamMember[]; playbooks: Playbook[] }
+interface SharedData { team: TeamMember[]; playbooks: Playbook[]; rewards: RewardItem[] }
 
 const STAFF: Role[] = ['advisor', 'team']
 export const isStaff = (r: Role) => STAFF.includes(r)
@@ -61,6 +61,7 @@ function assembleStore(rows: MenteeRow[], shared: SharedData | null): Store {
     mentees: rows.map(r => r.data.mentee).filter(Boolean),
     team: shared?.team ?? [],
     playbooks: shared?.playbooks ?? [],
+    rewards: shared?.rewards ?? [],
     sales: pick(s => s.sales),
     campaigns: pick(s => s.campaigns),
     goals: pick(s => s.goals),
@@ -85,7 +86,7 @@ function sliceFor(store: Store, m: Mentee): MenteeSlice {
   }
 }
 
-const sharedFrom = (store: Store): SharedData => ({ team: store.team, playbooks: store.playbooks })
+const sharedFrom = (store: Store): SharedData => ({ team: store.team, playbooks: store.playbooks, rewards: store.rewards })
 
 // ---------- Load ----------
 

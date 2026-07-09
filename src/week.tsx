@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   activeBlocks, todayIso, weekKey, shiftWeek, effectiveStreak, actionXp, overallProgress,
-  levelForXp, spentXp, REWARD_CATALOG, pillarById, pcolor, fmtDate,
+  levelForXp, spentXp, pillarById, pcolor, fmtDate,
   type Mentee, type Store, type Api, type Action, type ActionBlock, type CheckIn,
 } from './data'
 import { Attachments } from './attachments'
@@ -169,7 +169,7 @@ export function RewardsSection({ m, store, api, canRedeem, canManage }: {
   m: Mentee; store: Store; api: Api; canRedeem: boolean; canManage: boolean
 }) {
   const earned = actionXp(m)
-  const spent = spentXp(m.id, store.redemptions)
+  const spent = spentXp(m.id, store.redemptions, store.rewards)
   const saldo = Math.max(0, earned - spent)
   const mine = store.redemptions.filter(r => r.menteeId === m.id)
   return (
@@ -179,7 +179,7 @@ export function RewardsSection({ m, store, api, canRedeem, canManage }: {
         <span className="level-pill"><span className="lv">Saldo</span>{saldo} XP</span>
       </div>
       <div className="grid g-3 stagger">
-        {REWARD_CATALOG.map(r => {
+        {store.rewards.map(r => {
           const affordable = saldo >= r.costXp
           return (
             <div key={r.id} className="card reward-card">
@@ -204,7 +204,7 @@ export function RewardsSection({ m, store, api, canRedeem, canManage }: {
         <div className="card" style={{ marginTop: 16 }}>
           <div className="stat-label" style={{ marginBottom: 10 }}>Resgates</div>
           {mine.map(r => {
-            const item = REWARD_CATALOG.find(c => c.id === r.rewardId)
+            const item = store.rewards.find(c => c.id === r.rewardId)
             return (
               <div key={r.id} className="redeem-row">
                 <span>{item?.icon} {item?.label}</span>

@@ -68,6 +68,54 @@ export function PlaybooksView({ store, api }: { store: Store; api: Api }) {
   )
 }
 
+// ---------- Gerenciador de recompensas (advisor/equipe) ----------
+
+export function RewardsAdmin({ store, api }: { store: Store; api: Api }) {
+  const countRedemptions = (id: string) => store.redemptions.filter(r => r.rewardId === id).length
+  return (
+    <>
+      <div className="topbar"><h1>Recompensas <span className="crumb">· catálogo do programa</span></h1>
+        <div className="topbar-right"><span className="chip">{store.rewards.length} recompensas</span></div>
+      </div>
+      <div className="content page-enter">
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
+          <div>
+            <div className="eyebrow">Gamificação</div>
+            <div className="display" style={{ marginTop: 8 }}>O que o mentorado resgata com XP</div>
+            <div className="muted" style={{ marginTop: 8, fontSize: 13.5, maxWidth: 560 }}>
+              Você e a equipe criam, editam e removem as recompensas aqui. O catálogo é o mesmo para todos os mentorados e sincroniza na hora.
+            </div>
+          </div>
+          <button className="btn" onClick={() => api.open({ kind: 'reward' })}>＋ Nova recompensa</button>
+        </div>
+
+        <div className="mentee-grid stagger" style={{ marginTop: 26 }}>
+          {store.rewards.map(r => (
+            <div key={r.id} className="card hover">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="glyph" style={{ margin: 0 }}>{r.icon}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, letterSpacing: '-0.01em' }}>{r.label}</div>
+                  <div className="mono" style={{ fontSize: 12.5, color: 'var(--accent)', marginTop: 3, fontWeight: 650 }}>{r.costXp} XP</div>
+                </div>
+                <span className="row-tools" style={{ opacity: 1 }}>
+                  <button className="icon-btn" title="Editar" onClick={() => api.open({ kind: 'reward', reward: r })}>✎</button>
+                  <button className="icon-btn danger" title="Excluir"
+                    onClick={() => confirm(`Excluir a recompensa "${r.label}"?`) && api.delReward(r.id)}>✕</button>
+                </span>
+              </div>
+              <div className="muted-3" style={{ fontSize: 12.5, marginTop: 12, lineHeight: 1.5 }}>{r.description}</div>
+              <div className="divider" style={{ margin: '12px 0' }} />
+              <div className="stat-label">{countRedemptions(r.id)} resgate{countRedemptions(r.id) === 1 ? '' : 's'} no total</div>
+            </div>
+          ))}
+          {!store.rewards.length && <div className="empty">Nenhuma recompensa ainda. Clique em “＋ Nova recompensa”.</div>}
+        </div>
+      </div>
+    </>
+  )
+}
+
 // ---------- Central de alertas (advisor) ----------
 
 export function AlertsView({ store, onOpenMentee }: { store: Store; onOpenMentee: (id: string) => void }) {
