@@ -745,6 +745,9 @@ function Detail({ m, store, api, onBack, cloudMode }: { m: Mentee; store: Store;
               <span className="tag">{m.revenue}</span>
               <span className="level-pill"><span className="lv">Nv {lv.current.n}</span>{lv.current.name}</span>
               <span className="tag good">⟳ {streak} semanas</span>
+              {m.onboardedAt
+                ? <span className="tag good" title="Diagnóstico de onboarding concluído pelo mentorado">✓ Onboarding {fmtDate(m.onboardedAt)}</span>
+                : <span className="tag warn" title="O mentorado ainda não fez o diagnóstico de onboarding">◔ Diagnóstico pendente</span>}
               {squad.map(t => <span key={t.id} className="tag" title={t.role}>◈ {t.name.split(' ')[0]}</span>)}
             </div>
           </div>
