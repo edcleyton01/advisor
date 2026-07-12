@@ -8,8 +8,9 @@ import {
 } from './data'
 import {
   MenteeForm, BlockForm, ActionForm, SessionForm, TeamForm, SaleForm, CampaignForm, GoalForm,
-  PlaybookForm, ApplyPlaybookModal, DealForm, CycleCloseForm, MenteeLoginForm, RewardForm,
+  PlaybookForm, ApplyPlaybookModal, DealForm, CycleCloseForm, MenteeLoginForm, RewardForm, CallForm,
 } from './forms'
+import { AgendaView, NextCallCard } from './agenda'
 import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commercial'
 import { MyWeek, RewardsSection, RankingCard, AccessChip } from './week'
 import { FunnelCalculatorView, FunnelBoard } from './funnel'
@@ -224,11 +225,12 @@ function MenteeCard({ m, store, onOpen }: { m: Mentee; store: Store; onOpen: () 
 
 // ---------- App ----------
 type Role = 'advisor' | 'mentee'
-type View = 'overview' | 'alerts' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'funnel' | 'funnelboard' | 'quiz' | 'rewards'
+type View = 'overview' | 'alerts' | 'agenda' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'funnel' | 'funnelboard' | 'quiz' | 'rewards'
 
 const NAV: { id: View; label: string }[] = [
   { id: 'overview', label: 'Visão geral' },
   { id: 'alerts', label: 'Alertas' },
+  { id: 'agenda', label: 'Agenda' },
   { id: 'evolution', label: 'Evolução' },
   { id: 'mentees', label: 'Mentorados' },
   { id: 'sales', label: 'Comercial' },
@@ -279,6 +281,7 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
       checkins: s.checkins.filter(x => x.menteeId !== id),
       redemptions: s.redemptions.filter(x => x.menteeId !== id),
       deals: s.deals.filter(x => x.menteeId !== id),
+      calls: s.calls.filter(x => x.menteeId !== id),
       team: s.team.map(t => ({ ...t, menteeIds: t.menteeIds.filter(x => x !== id) })),
     })),
     upBlock: (menteeId, b) => setStore(s => ({
@@ -369,6 +372,8 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
     setNotes: (menteeId, text) => setStore(s => ({
       ...s, mentees: s.mentees.map(m => m.id !== menteeId ? m : { ...m, privateNotes: text }),
     })),
+    upCall: c => setStore(s => ({ ...s, calls: upsert(s.calls, c) })),
+    delCall: id => setStore(s => ({ ...s, calls: s.calls.filter(c => c.id !== id) })),
   }
 
   // Seleção de perfil do mentorado
@@ -457,6 +462,7 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
       <main className="main">
         {role === 'advisor' && view === 'overview' && <Overview store={store} onOpen={openMentee} />}
         {role === 'advisor' && view === 'alerts' && <AlertsView store={store} onOpenMentee={openMentee} />}
+        {role === 'advisor' && view === 'agenda' && <AgendaView store={store} api={api} onOpenMentee={openMentee} />}
         {role === 'advisor' && view === 'mentees' && <MenteesList store={store} api={api} onOpen={openMentee} />}
         {role === 'advisor' && view === 'detail' && (
           current
@@ -541,6 +547,10 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
       )}
       {modal?.kind === 'reward' && (
         <RewardForm initial={modal.reward} onSave={api.upReward} onClose={() => setModal(null)} />
+      )}
+      {modal?.kind === 'call' && (
+        <CallForm initial={modal.call} mentees={store.mentees} team={store.team}
+          defaults={{ menteeId: modal.menteeId }} onSave={api.upCall} onClose={() => setModal(null)} />
       )}
     </div>
   )
@@ -865,7 +875,10 @@ function Detail({ m, store, api, onBack, cloudMode }: { m: Mentee; store: Store;
         <div className="section">
           <div className="section-head">
             <div className="h2">Histórico de calls</div>
-            <button className="btn ghost" onClick={() => api.open({ kind: 'session', menteeId: m.id })}>＋ Registrar call</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn ghost" onClick={() => api.open({ kind: 'call', menteeId: m.id })}>◷ Agendar call</button>
+              <button className="btn ghost" onClick={() => api.open({ kind: 'session', menteeId: m.id })}>＋ Registrar call</button>
+            </div>
           </div>
           <div className="timeline">
             {m.sessions.map(s => <SessionItem key={s.id} s={s} store={store} />)}

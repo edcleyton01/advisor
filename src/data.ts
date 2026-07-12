@@ -697,6 +697,7 @@ export interface Store {
   deals: Deal[]
   funnels: FunnelSnapshot[]
   rewards: RewardItem[]
+  calls: ScheduledCall[]
 }
 
 export type ModalState =
@@ -716,6 +717,7 @@ export type ModalState =
   | { kind: 'report'; menteeId: string }
   | { kind: 'menteeLogin'; menteeId: string; menteeName: string }
   | { kind: 'reward'; reward?: RewardItem }
+  | { kind: 'call'; call?: ScheduledCall; menteeId?: string }
 
 export interface Api {
   open: (m: ModalState) => void
@@ -750,6 +752,8 @@ export interface Api {
   closeCycle: (menteeId: string, newCycle: string) => void
   addComment: (menteeId: string, blockId: string, actionId: string, text: string, author: string, role: Comment['role']) => void
   setNotes: (menteeId: string, text: string) => void
+  upCall: (c: ScheduledCall) => void
+  delCall: (id: string) => void
 }
 
 // ============================================================
@@ -1128,7 +1132,43 @@ export function insightsFor(store: Store, menteeId?: string): Insight[] {
 //  Alertas — o que precisa de ação agora (advisor)
 // ============================================================
 
-export type AlertKind = 'review' | 'overdue' | 'checkin'
+// ============================================================
+//  Agenda de calls (mentorias futuras — vira Session ao registrar)
+// ============================================================
+
+export interface ScheduledCall {
+  id: string
+  menteeId: string
+  date: string   // ISO (dia)
+  time: string   // 'HH:MM'
+  withId?: string // 'advisor' ou id do membro da equipe que conduz
+  topic: string
+  status: 'scheduled' | 'done' | 'canceled'
+}
+
+export const CALLS: ScheduledCall[] = [
+  { id: 'call1', menteeId: 'ana',    date: '2026-07-13', time: '10:00', withId: 'advisor', topic: 'Mentoria 06 · Revisão do funil de cases', status: 'scheduled' },
+  { id: 'call2', menteeId: 'rafael', date: '2026-07-14', time: '15:00', withId: 't2',      topic: 'Pipeline high ticket · follow-up de propostas', status: 'scheduled' },
+  { id: 'call3', menteeId: 'carol',  date: '2026-07-16', time: '11:00', withId: 't1',      topic: 'Campanha de protocolos premium · criativos', status: 'scheduled' },
+  { id: 'call4', menteeId: 'bruno',  date: '2026-07-17', time: '14:00', withId: 't2',      topic: 'Renovações de retainer · playbook de upsell', status: 'scheduled' },
+  { id: 'call0', menteeId: 'ana',    date: '2026-07-06', time: '10:00', withId: 'advisor', topic: 'Mentoria 05 · Revisão de posicionamento', status: 'done' },
+]
+
+export const addDaysIso = (iso: string, n: number) => {
+  const [y, m, dd] = iso.split('-').map(Number)
+  const dt = new Date(y, m - 1, dd + n)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
+// Próximas calls agendadas (hoje em diante), mais próxima primeiro
+export function upcomingCalls(calls: ScheduledCall[], menteeId?: string): ScheduledCall[] {
+  const t = todayIso()
+  return calls
+    .filter(c => c.status === 'scheduled' && c.date >= t && (!menteeId || c.menteeId === menteeId))
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+}
+
+export type AlertKind = 'review' | 'overdue' | 'checkin' | 'call'
 export interface Alert {
   id: string
   kind: AlertKind
@@ -1143,6 +1183,7 @@ const ALERT_META: Record<AlertKind, { icon: string; label: string }> = {
   review:  { icon: '✓', label: 'Aprovação pendente' },
   overdue: { icon: '⚠', label: 'Ação atrasada' },
   checkin: { icon: '⟳', label: 'Check-in' },
+  call:    { icon: '◷', label: 'Call agendada' },
 }
 export const alertMeta = (k: AlertKind) => ALERT_META[k]
 
@@ -1177,6 +1218,19 @@ export function buildAlerts(store: Store): Alert[] {
       id: `ck-${m.id}`, kind: 'checkin', severity: 'warn', menteeId: m.id, menteeName: first,
       title: 'Sem check-in nesta semana', detail: 'lembre o mentorado de registrar o check-in',
     })
+
+    // lembrete de call: hoje ou amanhã
+    const t = todayIso()
+    for (const c of (store.calls ?? []).filter(c => c.menteeId === m.id && c.status === 'scheduled')) {
+      if (c.date === t) out.push({
+        id: `call-${c.id}`, kind: 'call', severity: 'warn', menteeId: m.id, menteeName: first,
+        title: `Call hoje às ${c.time}`, detail: c.topic,
+      })
+      else if (c.date === addDaysIso(t, 1)) out.push({
+        id: `call-${c.id}`, kind: 'call', severity: 'warn', menteeId: m.id, menteeName: first,
+        title: `Call amanhã às ${c.time}`, detail: c.topic,
+      })
+    }
   }
   const rank = (s: Alert['severity']) => (s === 'risk' ? 0 : 1)
   return out.sort((a, b) => rank(a.severity) - rank(b.severity))
@@ -1205,7 +1259,7 @@ export function accessInfo(m: Mentee): AccessInfo | null {
 export const seedStore = (): Store => structuredClone({
   mentees: MENTEES, team: TEAM, sales: SALES, campaigns: CAMPAIGNS, goals: GOALS,
   checkins: CHECKINS, playbooks: PLAYBOOKS, redemptions: REDEMPTIONS, deals: DEALS,
-  funnels: FUNNEL_SNAPSHOTS, rewards: REWARD_CATALOG,
+  funnels: FUNNEL_SNAPSHOTS, rewards: REWARD_CATALOG, calls: CALLS,
 })
 
 // Aplica migrações a um store salvo (localStorage ou nuvem) sem apagar edições.
@@ -1219,6 +1273,7 @@ export function migrateStore(s: any): Store | null {
   if (!s.deals) s.deals = structuredClone(DEALS)
   if (!s.funnels) s.funnels = structuredClone(FUNNEL_SNAPSHOTS)
   if (!s.rewards) s.rewards = structuredClone(REWARD_CATALOG)
+  if (!s.calls) s.calls = []
   // novos templates da metodologia entram sem apagar edições existentes
   for (const p of PLAYBOOKS) {
     if (!s.playbooks.some((x: { id: string }) => x.id === p.id)) s.playbooks.push(structuredClone(p))
@@ -1243,5 +1298,6 @@ export function ensureStoreShape(s: any): Store {
     deals: arr(s?.deals),
     funnels: arr(s?.funnels),
     rewards: arr(s?.rewards),
+    calls: arr(s?.calls),
   }
 }

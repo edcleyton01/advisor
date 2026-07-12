@@ -572,6 +572,44 @@ tr:hover .row-tools, .camp:hover .row-tools { opacity: 1; }
 }
 .save-badge.is-err:hover { filter: brightness(1.05); }
 
+/* ---------- Agenda de calls ---------- */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-head-row { margin-bottom: 8px; }
+.cal-dow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); text-align: center; }
+.cal-day {
+  min-height: 74px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 6px; display: flex; flex-direction: column; gap: 4px;
+  background: rgba(255,255,255,0.015);
+}
+.cal-day.empty { border-color: transparent; background: none; }
+.cal-day.today { border-color: rgba(232,179,74,0.45); background: var(--accent-dim); }
+.cal-num { font-size: 10.5px; color: var(--text-3); }
+.cal-day.today .cal-num { color: var(--accent); font-weight: 700; }
+.cal-call {
+  display: block; width: 100%; text-align: left; font-size: 10.5px; font-weight: 600;
+  padding: 3px 6px; border-radius: 6px; line-height: 1.3;
+  background: var(--accent-dim); color: var(--accent);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cal-call:hover { filter: brightness(1.2); }
+.cal-call.done { background: var(--good-dim); color: var(--good); }
+
+.call-row {
+  display: flex; align-items: center; gap: 14px; padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.call-row:last-child { border-bottom: none; }
+.call-when { width: 72px; flex-shrink: 0; text-align: right; }
+.call-date { font-size: 12.5px; font-weight: 650; }
+.call-date.today { color: var(--accent); }
+.call-time { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.call-topic { font-size: 13.5px; font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.call-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.call-row .icon-btn { opacity: 0; }
+.call-row:hover .icon-btn { opacity: 0.75; }
+
+.next-call { border-color: rgba(232,179,74,0.3); background: linear-gradient(135deg, rgba(232,179,74,0.08), transparent 55%); }
+
 /* ---------- Quiz de onboarding ---------- */
 .quiz-intro { max-width: 640px; padding: 12px 0; }
 .quiz-progress { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 16px; }

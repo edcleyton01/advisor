@@ -3,10 +3,10 @@ import {
   PILLARS, LEVELS, QUIZ, PLAYBOOKS,
   levelForXp, actionXp, overallProgress, quizScores,
   campaignCalc, salesSummary, monthActuals, funnelCalc,
-  checkinStreak, spentXp, accessInfo,
+  checkinStreak, spentXp, accessInfo, upcomingCalls, addDaysIso,
   weekKey, shiftWeek, todayIso,
   type Mentee, type ActionBlock, type Action, type CheckIn,
-  type SaleEntry, type Campaign, type Redemption, type RewardItem,
+  type SaleEntry, type Campaign, type Redemption, type RewardItem, type ScheduledCall,
 } from './data'
 
 // ---------- fábricas mínimas ----------
@@ -212,6 +212,40 @@ describe('accessInfo', () => {
     const today = todayIso()
     const m = mkMentee({ startDate: addDays(today, -40), accessUntil: addDays(today, -5) })
     expect(accessInfo(m)!.expired).toBe(true)
+  })
+})
+
+// ---------- upcomingCalls ----------
+describe('upcomingCalls', () => {
+  const call = (p: Partial<ScheduledCall>): ScheduledCall => ({
+    id: Math.random().toString(36).slice(2), menteeId: 'm1', date: todayIso(), time: '10:00',
+    topic: '', status: 'scheduled', ...p,
+  })
+  it('só agendadas de hoje em diante, ordenadas por data e hora', () => {
+    const t = todayIso()
+    const calls = [
+      call({ id: 'passada', date: addDaysIso(t, -1) }),
+      call({ id: 'depois', date: addDaysIso(t, 5) }),
+      call({ id: 'hoje-tarde', date: t, time: '16:00' }),
+      call({ id: 'hoje-manha', date: t, time: '09:00' }),
+      call({ id: 'cancelada', date: addDaysIso(t, 2), status: 'canceled' }),
+      call({ id: 'feita', date: addDaysIso(t, 3), status: 'done' }),
+    ]
+    expect(upcomingCalls(calls).map(c => c.id)).toEqual(['hoje-manha', 'hoje-tarde', 'depois'])
+  })
+  it('filtra por mentorado quando informado', () => {
+    const t = todayIso()
+    const calls = [call({ id: 'a', menteeId: 'm1', date: addDaysIso(t, 1) }), call({ id: 'b', menteeId: 'm2', date: addDaysIso(t, 1) })]
+    expect(upcomingCalls(calls, 'm2').map(c => c.id)).toEqual(['b'])
+  })
+})
+
+// ---------- addDaysIso ----------
+describe('addDaysIso', () => {
+  it('atravessa mês e ano corretamente', () => {
+    expect(addDaysIso('2026-07-31', 1)).toBe('2026-08-01')
+    expect(addDaysIso('2026-12-31', 1)).toBe('2027-01-01')
+    expect(addDaysIso('2026-03-01', -1)).toBe('2026-02-28')
   })
 })
 

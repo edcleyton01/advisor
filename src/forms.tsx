@@ -5,7 +5,7 @@ import {
   type Mentee, type ActionBlock, type Action, type Session, type TeamMember,
   type SaleEntry, type Campaign, type PillarId, type FunnelId, type CampaignStatus,
   type MonthlyGoal, type Playbook, type PlaybookAction, type Deal, type DealStage, type Store,
-  type RewardItem,
+  type RewardItem, type ScheduledCall,
 } from './data'
 import { createMenteeLogin, createTeamLogin } from './cloud2'
 
@@ -230,6 +230,49 @@ export function SessionForm({ team, onSave, onClose }: { team: TeamMember[]; onS
         </Field>
         <Field label="Próximo passo combinado" span2>
           <input className="in" value={f.nextStep} onChange={e => setF(p => ({ ...p, nextStep: e.target.value }))} />
+        </Field>
+      </div>
+      <Foot onClose={onClose} onSave={save} ok={ok} />
+    </Modal>
+  )
+}
+
+// ---------- Agendar call ----------
+
+export function CallForm({ initial, mentees, team, defaults, onSave, onClose }: {
+  initial?: ScheduledCall; mentees: Mentee[]; team: TeamMember[]
+  defaults?: { menteeId?: string }
+  onSave: (c: ScheduledCall) => void; onClose: () => void
+}) {
+  const [f, setF] = useState<ScheduledCall>(() => initial ? structuredClone(initial) : ({
+    id: uid(), menteeId: defaults?.menteeId ?? mentees[0]?.id ?? '', date: today(), time: '10:00',
+    withId: 'advisor', topic: '', status: 'scheduled',
+  }))
+  const ok = !!f.menteeId && !!f.date && !!f.time && f.topic.trim().length > 1
+  const save = () => { onSave(f); onClose() }
+  return (
+    <Modal title={initial ? 'Editar call' : 'Agendar call'} onClose={onClose}>
+      <div className="form-grid">
+        <Field label="Mentorado">
+          <select className="in" value={f.menteeId} onChange={e => setF(p => ({ ...p, menteeId: e.target.value }))}>
+            {mentees.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
+        </Field>
+        <Field label="Conduzida por">
+          <select className="in" value={f.withId} onChange={e => setF(p => ({ ...p, withId: e.target.value }))}>
+            <option value="advisor">{ADVISOR.name} · Mentor</option>
+            {team.map(t => <option key={t.id} value={t.id}>{t.name} · Guardião</option>)}
+          </select>
+        </Field>
+        <Field label="Data">
+          <input className="in" type="date" value={f.date} onChange={e => setF(p => ({ ...p, date: e.target.value }))} />
+        </Field>
+        <Field label="Horário">
+          <input className="in" type="time" value={f.time} onChange={e => setF(p => ({ ...p, time: e.target.value }))} />
+        </Field>
+        <Field label="Pauta" span2>
+          <input className="in" value={f.topic} onChange={e => setF(p => ({ ...p, topic: e.target.value }))}
+            placeholder="Ex.: Mentoria 07 · Revisão da campanha de julho" />
         </Field>
       </div>
       <Foot onClose={onClose} onSave={save} ok={ok} />

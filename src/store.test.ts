@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { ensureStoreShape, migrateStore, seedStore, PLAYBOOKS } from './data'
 
-const KEYS = ['mentees', 'team', 'sales', 'campaigns', 'goals', 'checkins', 'playbooks', 'redemptions', 'deals', 'funnels', 'rewards'] as const
+const KEYS = ['mentees', 'team', 'sales', 'campaigns', 'goals', 'checkins', 'playbooks', 'redemptions', 'deals', 'funnels', 'rewards', 'calls'] as const
 
 describe('ensureStoreShape', () => {
   it('de null/lixo, devolve um Store com todos os campos como arrays vazios', () => {
@@ -33,7 +33,7 @@ describe('migrateStore', () => {
     const old: any = { mentees: [], team: [], sales: [], campaigns: [] }
     const s = migrateStore(old)!
     expect(s).not.toBeNull()
-    for (const k of ['goals', 'checkins', 'playbooks', 'redemptions', 'deals', 'funnels', 'rewards']) {
+    for (const k of ['goals', 'checkins', 'playbooks', 'redemptions', 'deals', 'funnels', 'rewards', 'calls']) {
       expect(Array.isArray((s as any)[k])).toBe(true)
     }
   })

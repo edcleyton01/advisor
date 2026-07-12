@@ -9,6 +9,7 @@ import {
   ensureStoreShape,
   type Store, type Mentee, type TeamMember, type Playbook, type SaleEntry, type Campaign,
   type MonthlyGoal, type CheckIn, type Redemption, type Deal, type FunnelSnapshot, type RewardItem,
+  type ScheduledCall,
 } from './data'
 
 export type Role = 'advisor' | 'team' | 'mentee'
@@ -31,6 +32,7 @@ interface MenteeSlice {
   redemptions: Redemption[]
   deals: Deal[]
   funnels: FunnelSnapshot[]
+  calls?: ScheduledCall[] // opcional: linhas antigas não têm
 }
 interface MenteeRow { id: string; data: MenteeSlice }
 interface SharedData { team: TeamMember[]; playbooks: Playbook[]; rewards: RewardItem[] }
@@ -72,6 +74,7 @@ function assembleStore(rows: MenteeRow[], shared: SharedData | null): Store {
     redemptions: pick(s => s.redemptions),
     deals: pick(s => s.deals),
     funnels: pick(s => s.funnels),
+    calls: pick(s => s.calls),
   })
 }
 
@@ -86,6 +89,7 @@ function sliceFor(store: Store, m: Mentee): MenteeSlice {
     redemptions: mine(store.redemptions),
     deals: mine(store.deals),
     funnels: mine(store.funnels),
+    calls: mine(store.calls),
   }
 }
 

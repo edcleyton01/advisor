@@ -5,6 +5,7 @@ import {
   type Mentee, type Store, type Api, type Action, type ActionBlock, type CheckIn,
 } from './data'
 import { Attachments } from './attachments'
+import { NextCallCard } from './agenda'
 
 const uid = () => Math.random().toString(36).slice(2, 10)
 
@@ -156,7 +157,8 @@ export function MyWeek({ m, store, api, onLogout }: { m: Mentee; store: Store; a
         <div className="eyebrow">Semana de {fmtDate(weekKey())}</div>
         <div className="display" style={{ marginTop: 8, fontSize: 26 }}>O que importa agora, {m.name.split(' ')[0]}.</div>
 
-        <div style={{ marginTop: 22 }}>
+        <div style={{ marginTop: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <NextCallCard store={store} menteeId={m.id} />
           <CheckInCard m={m} store={store} api={api} />
         </div>
 
