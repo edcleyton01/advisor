@@ -555,6 +555,23 @@ tr:hover .row-tools, .camp:hover .row-tools { opacity: 1; }
 }
 .rt-banner:hover { filter: brightness(1.05); }
 
+/* ---------- Status de gravação ---------- */
+.save-badge {
+  position: fixed; bottom: 22px; right: 22px; z-index: 54;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 14px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; letter-spacing: -0.01em;
+  color: var(--text-2); background: var(--surface-2);
+  border: 1px solid var(--line); box-shadow: var(--shadow);
+  animation: rise 0.3s cubic-bezier(0.22,1,0.36,1) both;
+}
+.save-badge.is-ok  { color: var(--good); border-color: var(--good-dim); }
+.save-badge.is-err {
+  color: #1a1206; background: linear-gradient(90deg, #f0a94a, #f4cf7d);
+  border: none; box-shadow: 0 12px 32px -8px rgba(240,169,74,0.5); cursor: pointer;
+}
+.save-badge.is-err:hover { filter: brightness(1.05); }
+
 /* ---------- Quiz de onboarding ---------- */
 .quiz-intro { max-width: 640px; padding: 12px 0; }
 .quiz-progress { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 16px; }

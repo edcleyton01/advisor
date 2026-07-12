@@ -6,7 +6,7 @@ import { supabase, cloudInitError, cloudHost, loadCloudStore, saveCloudStore, si
 const HostTag = () => cloudHost
   ? <div style={{ marginTop: 20, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--text-3)' }}>🔗 {cloudHost}</div>
   : null
-import { seedStore, migrateStore, type Store } from './data'
+import { seedStore, migrateStore, ensureStoreShape, type Store } from './data'
 import {
   getIdentity, isStaff, loadForStaff, loadForMentee, saveForStaff, saveForMentee,
   migrateFromWorkspace, type Identity,
@@ -86,11 +86,12 @@ export default function CloudRoot() {
   const [loadError, setLoadError] = useState<string | null>(null)
 
   // destino da gravação (muda conforme o papel)
-  const persistRef = useRef<(s: Store) => void>(() => {})
+  const persistRef = useRef<(s: Store) => Promise<{ error?: string }>>(async () => ({}))
   const skipPersist = useRef(false)   // não regrava mudanças vindas do Realtime/carga inicial
   const hasPending = useRef(false)    // há edição local ainda não salva?
   const lastSaveAt = useRef(0)        // p/ ignorar o eco das próprias gravações
   const [stale, setStale] = useState(false) // outro usuário alterou enquanto você editava
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
   // Sessão de autenticação
   useEffect(() => {
@@ -116,7 +117,7 @@ export default function CloudRoot() {
           setIdentity(null)
           persistRef.current = s => saveCloudStore(s)
           const raw = await loadCloudStore()
-          const s = raw ? (migrateStore(raw) ?? seedStore()) : seedStore()
+          const s = ensureStoreShape(raw ? (migrateStore(raw) ?? seedStore()) : seedStore())
           if (!raw) await saveCloudStore(s)
           if (!cancel) { skipPersist.current = true; setStore(s) }
           return
@@ -134,7 +135,7 @@ export default function CloudRoot() {
             if (blob && blob.mentees.length) {
               await migrateFromWorkspace(blob)
               s = await loadForStaff()
-              if (!s || s.mentees.length === 0) s = blob // segurança: nunca vazio se havia dados
+              if (!s || s.mentees.length === 0) s = ensureStoreShape(blob) // segurança: nunca vazio se havia dados
             }
           }
           if (!cancel) { skipPersist.current = true; setStore(s ?? seedStore()) }
@@ -152,18 +153,41 @@ export default function CloudRoot() {
     return () => { cancel = true }
   }, [session])
 
+  // Grava com 1 tentativa silenciosa de retry (para blips de rede) e
+  // reflete o resultado em saveState. Em falha, hasPending continua true
+  // (o Realtime segue sabendo que há trabalho não salvo) e o botão de
+  // "Tentar de novo" aparece.
+  const doSave = useCallback(async (s: Store) => {
+    setSaveState('saving')
+    let res = await persistRef.current(s)
+    if (res.error) {
+      await new Promise(r => setTimeout(r, 1200))
+      res = await persistRef.current(s)
+    }
+    lastSaveAt.current = Date.now()
+    if (res.error) {
+      setSaveState('error')
+    } else {
+      hasPending.current = false
+      setSaveState('saved')
+    }
+  }, [])
+
   // Persistência (debounce) — na nuvem o CloudRoot é dono do estado
   useEffect(() => {
     if (!store) return
     if (skipPersist.current) { skipPersist.current = false; return }
     hasPending.current = true
-    const t = setTimeout(async () => {
-      await persistRef.current(store)
-      lastSaveAt.current = Date.now()
-      hasPending.current = false
-    }, 800)
+    const t = setTimeout(() => { doSave(store) }, 800)
     return () => clearTimeout(t)
-  }, [store])
+  }, [store, doSave])
+
+  // "Salvo" é transitório: some sozinho após 1,8s.
+  useEffect(() => {
+    if (saveState !== 'saved') return
+    const t = setTimeout(() => setSaveState('idle'), 1800)
+    return () => clearTimeout(t)
+  }, [saveState])
 
   // Re-busca os dados do servidor e aplica sem regravar
   const refetch = useCallback(async () => {
@@ -238,6 +262,13 @@ export default function CloudRoot() {
       {stale && (
         <button className="rt-banner" onClick={() => refetch()}>
           🔄 Outra pessoa atualizou os dados — clique para atualizar
+        </button>
+      )}
+      {saveState === 'saving' && <div className="save-badge">Salvando…</div>}
+      {saveState === 'saved' && <div className="save-badge is-ok">✓ Salvo</div>}
+      {saveState === 'error' && (
+        <button className="save-badge is-err" onClick={() => store && doSave(store)}>
+          ⚠ Não foi possível salvar — Tentar de novo
         </button>
       )}
     </>

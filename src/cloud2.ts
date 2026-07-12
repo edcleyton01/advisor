@@ -5,9 +5,10 @@
 //  Construído ao lado da Fase 1. Só entra em uso no "cutover".
 // ============================================================
 import { supabase } from './supabase'
-import type {
-  Store, Mentee, TeamMember, Playbook, SaleEntry, Campaign,
-  MonthlyGoal, CheckIn, Redemption, Deal, FunnelSnapshot, RewardItem,
+import {
+  ensureStoreShape,
+  type Store, type Mentee, type TeamMember, type Playbook, type SaleEntry, type Campaign,
+  type MonthlyGoal, type CheckIn, type Redemption, type Deal, type FunnelSnapshot, type RewardItem,
 } from './data'
 
 export type Role = 'advisor' | 'team' | 'mentee'
@@ -56,9 +57,11 @@ export async function getIdentity(): Promise<Identity | null> {
 // ---------- Montar / repartir o Store ----------
 
 function assembleStore(rows: MenteeRow[], shared: SharedData | null): Store {
-  const pick = <T,>(f: (s: MenteeSlice) => T[] | undefined) => rows.flatMap(r => f(r.data) ?? [])
-  return {
-    mentees: rows.map(r => r.data.mentee).filter(Boolean),
+  // ignora linhas corrompidas (data ausente/malformada) antes de tocar em .data.*
+  const safe = (rows ?? []).filter(r => r && r.data && typeof r.data === 'object')
+  const pick = <T,>(f: (s: MenteeSlice) => T[] | undefined) => safe.flatMap(r => f(r.data) ?? [])
+  return ensureStoreShape({
+    mentees: safe.map(r => r.data.mentee).filter(Boolean),
     team: shared?.team ?? [],
     playbooks: shared?.playbooks ?? [],
     rewards: shared?.rewards ?? [],
@@ -69,7 +72,7 @@ function assembleStore(rows: MenteeRow[], shared: SharedData | null): Store {
     redemptions: pick(s => s.redemptions),
     deals: pick(s => s.deals),
     funnels: pick(s => s.funnels),
-  }
+  })
 }
 
 function sliceFor(store: Store, m: Mentee): MenteeSlice {
@@ -122,21 +125,26 @@ export async function loadForMentee(menteeId: string): Promise<Store | null> {
 // Não gravamos owner_user_id aqui (é gerido no provisionamento) —
 // omitir a coluna no upsert preserva o valor existente.
 
-export async function saveForStaff(store: Store): Promise<void> {
-  if (!supabase) return
+export async function saveForStaff(store: Store): Promise<{ error?: string }> {
+  if (!supabase) return {}
   const now = new Date().toISOString()
   const rows = store.mentees.map(m => ({ id: m.id, data: sliceFor(store, m), updated_at: now }))
-  await Promise.all([
+  const [r1, r2] = await Promise.all([
     supabase.from('mentees').upsert(rows),
     supabase.from('shared').upsert({ id: 'global', data: sharedFrom(store), updated_at: now }),
   ])
+  const error = r1.error || r2.error
+  if (error) { console.error('[cloud] saveForStaff:', error.message); return { error: error.message } }
+  return {}
 }
 
-export async function saveForMentee(store: Store, menteeId: string): Promise<void> {
-  if (!supabase) return
+export async function saveForMentee(store: Store, menteeId: string): Promise<{ error?: string }> {
+  if (!supabase) return {}
   const m = store.mentees.find(x => x.id === menteeId)
-  if (!m) return
-  await supabase.from('mentees').upsert({ id: m.id, data: sliceFor(store, m), updated_at: new Date().toISOString() })
+  if (!m) return {}
+  const { error } = await supabase.from('mentees').upsert({ id: m.id, data: sliceFor(store, m), updated_at: new Date().toISOString() })
+  if (error) { console.error('[cloud] saveForMentee:', error.message); return { error: error.message } }
+  return {}
 }
 
 // ---------- Migração única: workspace (Fase 1) → tabelas (Fase 2) ----------

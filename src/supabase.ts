@@ -57,12 +57,13 @@ export async function loadCloudStore(): Promise<Store | null> {
   return (data?.data as Store) ?? null
 }
 
-export async function saveCloudStore(store: Store): Promise<void> {
-  if (!supabase) return
+export async function saveCloudStore(store: Store): Promise<{ error?: string }> {
+  if (!supabase) return {}
   const { error } = await supabase
     .from('workspace')
     .upsert({ id: WORKSPACE_ID, data: store, updated_at: new Date().toISOString() })
-  if (error) console.error('[cloud] save:', error.message)
+  if (error) { console.error('[cloud] save:', error.message); return { error: error.message } }
+  return {}
 }
 
 // ---------- Autenticação (e-mail + senha) ----------

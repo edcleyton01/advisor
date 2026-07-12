@@ -1225,3 +1225,23 @@ export function migrateStore(s: any): Store | null {
   }
   return s as Store
 }
+
+// Garante que todo campo do Store é um array — blinda contra um blob/linha
+// corrompido na nuvem (ex.: `mentees: null`) que derrubaria um `.map`.
+// Idempotente: um Store já válido passa intacto.
+export function ensureStoreShape(s: any): Store {
+  const arr = <T,>(v: any): T[] => (Array.isArray(v) ? v : [])
+  return {
+    mentees: arr(s?.mentees),
+    team: arr(s?.team),
+    sales: arr(s?.sales),
+    campaigns: arr(s?.campaigns),
+    goals: arr(s?.goals),
+    checkins: arr(s?.checkins),
+    playbooks: arr(s?.playbooks),
+    redemptions: arr(s?.redemptions),
+    deals: arr(s?.deals),
+    funnels: arr(s?.funnels),
+    rewards: arr(s?.rewards),
+  }
+}

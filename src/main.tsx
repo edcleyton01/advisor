@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import CloudRoot from './cloud'
+import { ErrorBoundary } from './errorboundary'
 import { cloudEnabled } from './supabase'
 import './styles.css'
 
@@ -9,7 +10,9 @@ import './styles.css'
 // Sem credenciais → modo local (localStorage), idêntico ao protótipo.
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {cloudEnabled ? <CloudRoot /> : <App />}
+    <ErrorBoundary>
+      {cloudEnabled ? <CloudRoot /> : <App />}
+    </ErrorBoundary>
   </React.StrictMode>,
 )
 
