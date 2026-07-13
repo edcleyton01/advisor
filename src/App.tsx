@@ -12,6 +12,7 @@ import {
 } from './forms'
 import { AgendaView, NextCallCard } from './agenda'
 import { MyResults } from './results'
+import { MyEvolution } from './evolution'
 import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commercial'
 import { MyWeek, RewardsSection, RankingCard, AccessChip } from './week'
 import { FunnelCalculatorView, FunnelBoard } from './funnel'
@@ -226,7 +227,7 @@ function MenteeCard({ m, store, onOpen }: { m: Mentee; store: Store; onOpen: () 
 
 // ---------- App ----------
 type Role = 'advisor' | 'mentee'
-type View = 'overview' | 'alerts' | 'agenda' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'results' | 'funnel' | 'funnelboard' | 'quiz' | 'rewards'
+type View = 'overview' | 'alerts' | 'agenda' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'results' | 'myevolution' | 'funnel' | 'funnelboard' | 'quiz' | 'rewards'
 
 const NAV: { id: View; label: string }[] = [
   { id: 'overview', label: 'Visão geral' },
@@ -436,6 +437,9 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
               <button className={`nav-item ${view === 'results' ? 'active' : ''}`} onClick={() => setView('results')}>
                 <span className="dot" /> Meus resultados
               </button>
+              <button className={`nav-item ${view === 'myevolution' ? 'active' : ''}`} onClick={() => setView('myevolution')}>
+                <span className="dot" /> Minha evolução
+              </button>
               <button className={`nav-item ${view === 'funnel' ? 'active' : ''}`} onClick={() => setView('funnel')}>
                 <span className="dot" /> Calculadora de funil
               </button>
@@ -490,6 +494,8 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
               ? <Journey m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />
               : view === 'results'
                 ? <MyResults m={menteeSelf} store={store} onLogout={menteeLogout} />
+              : view === 'myevolution'
+                ? <MyEvolution m={menteeSelf} store={store} onLogout={menteeLogout} />
               : view === 'funnel'
                 ? <FunnelCalculatorView m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />
                 : view === 'quiz'
