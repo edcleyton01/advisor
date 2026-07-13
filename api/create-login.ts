@@ -6,8 +6,25 @@
 // ============================================================
 import { createClient } from '@supabase/supabase-js'
 
+// Rate limit simples por IP (por instância): criação de login é rara —
+// mais de 10 chamadas em 10 min é abuso ou script quebrado.
+const WINDOW_MS = 10 * 60 * 1000
+const MAX_PER_WINDOW = 10
+const hits = new Map<string, { n: number; at: number }>()
+
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido.' })
+
+  const ip = String(req.headers['x-forwarded-for'] || 'unknown').split(',')[0].trim()
+  const now = Date.now()
+  const h = hits.get(ip)
+  if (h && now - h.at < WINDOW_MS) {
+    if (h.n >= MAX_PER_WINDOW) return res.status(429).json({ error: 'Muitas tentativas — aguarde alguns minutos.' })
+    h.n++
+  } else {
+    hits.set(ip, { n: 1, at: now })
+  }
+  if (hits.size > 1000) hits.clear()
 
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -34,7 +51,7 @@ export default async function handler(req: any, res: any) {
   const password = String(body.password || '')
   const menteeId = String(body.menteeId || '')
   if (!email || !password) return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' })
-  if (password.length < 6) return res.status(400).json({ error: 'A senha precisa de ao menos 6 caracteres.' })
+  if (password.length < 8) return res.status(400).json({ error: 'A senha precisa de ao menos 8 caracteres.' })
   if (kind === 'mentee' && !menteeId) return res.status(400).json({ error: 'Mentorado não informado.' })
 
   // 2) para mentorado: valida o registro e evita duplicar vínculo

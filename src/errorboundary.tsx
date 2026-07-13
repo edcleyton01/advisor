@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { reportError } from './monitor'
 
 // Última linha de defesa: um erro de render em qualquer tela é capturado aqui
 // em vez de virar tela branca. Mostra uma saída clara (recarregar) e o detalhe
@@ -15,6 +16,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ui] erro não tratado:', error, info.componentStack)
+    reportError(error, 'boundary')
   }
 
   render() {

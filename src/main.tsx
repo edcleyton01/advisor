@@ -3,8 +3,11 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import CloudRoot from './cloud'
 import { ErrorBoundary } from './errorboundary'
+import { installMonitor } from './monitor'
 import { cloudEnabled } from './supabase'
 import './styles.css'
+
+installMonitor() // erros fora do React (só em produção)
 
 // Com credenciais do Supabase → nuvem (login + workspace compartilhado).
 // Sem credenciais → modo local (localStorage), idêntico ao protótipo.

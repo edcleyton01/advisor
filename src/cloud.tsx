@@ -189,6 +189,14 @@ export default function CloudRoot() {
     return () => clearTimeout(t)
   }, [saveState])
 
+  // Conexão voltou com gravação pendente → tenta de novo sozinho
+  useEffect(() => {
+    if (saveState !== 'error' || !store) return
+    const retry = () => doSave(store)
+    window.addEventListener('online', retry)
+    return () => window.removeEventListener('online', retry)
+  }, [saveState, store, doSave])
+
   // Re-busca os dados do servidor e aplica sem regravar
   const refetch = useCallback(async () => {
     if (!identity || !identity.configured) return

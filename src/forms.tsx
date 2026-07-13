@@ -299,7 +299,7 @@ export function TeamForm({ initial, mentees, cloudMode, onSave, onClose }: {
   const canGrant = !!cloudMode && !initial
   const wantsAccess = canGrant && (email.trim() !== '' || password !== '')
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())
-  const ok = f.name.trim().length > 1 && f.role.trim().length > 0 && (!wantsAccess || (emailOk && password.length >= 6))
+  const ok = f.name.trim().length > 1 && f.role.trim().length > 0 && (!wantsAccess || (emailOk && password.length >= 8))
   const save = async () => {
     setErr(null)
     if (wantsAccess) {
@@ -346,7 +346,7 @@ export function TeamForm({ initial, mentees, cloudMode, onSave, onClose }: {
               <Field label="E-mail de acesso">
                 <input className="in" type="email" value={email} onChange={e => { setEmail(e.target.value); setErr(null) }} placeholder="membro@empresa.com" />
               </Field>
-              <Field label="Senha (mín. 6)">
+              <Field label="Senha (mín. 8)">
                 <input className="in" type="password" value={password} onChange={e => { setPassword(e.target.value); setErr(null) }} />
               </Field>
             </div>
@@ -733,7 +733,7 @@ export function MenteeLoginForm({ menteeId, menteeName, onClose }: {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [done, setDone] = useState(false)
-  const ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && password.length >= 6
+  const ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && password.length >= 8
 
   const submit = async () => {
     setBusy(true); setErr(null)
@@ -763,7 +763,7 @@ export function MenteeLoginForm({ menteeId, menteeName, onClose }: {
               <input className="in" type="email" value={email} autoFocus
                 onChange={e => { setEmail(e.target.value); setErr(null) }} placeholder="mentorado@email.com" />
             </Field>
-            <Field label="Senha inicial (mín. 6)" span2>
+            <Field label="Senha inicial (mín. 8)" span2>
               <input className="in" type="text" value={password}
                 onChange={e => { setPassword(e.target.value); setErr(null) }} placeholder="defina e informe ao mentorado" />
             </Field>
