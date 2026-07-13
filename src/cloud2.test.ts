@@ -26,6 +26,29 @@ describe('saveForStaff — contrato de erro', () => {
   })
 })
 
+describe('saveForStaff — notas privadas fora do payload do mentorado', () => {
+  const storeWithNotes = () => ensureStoreShape({ mentees: [{ id: 'm1', name: 'A', blocks: [], privateNotes: 'segredo do advisor' }] })
+  // ordem das chamadas: [0] mentees_private, [1] mentees, [2] shared
+
+  it('com a tabela privada disponível, privateNotes sai do blob e vai para mentees_private', async () => {
+    upsertMock.mockResolvedValue({ error: null })
+    await saveForStaff(storeWithNotes())
+    const privRows = upsertMock.mock.calls[0][0]
+    const menteeRows = upsertMock.mock.calls[1][0]
+    expect(privRows[0].data.privateNotes).toBe('segredo do advisor')
+    expect(menteeRows[0].data.mentee.privateNotes).toBeUndefined()
+  })
+
+  it('sem a tabela privada (SQL da Fase 3 não aplicado), mantém a nota no blob — nunca perde', async () => {
+    upsertMock.mockResolvedValueOnce({ error: { message: 'relation "mentees_private" does not exist' } })
+    upsertMock.mockResolvedValue({ error: null })
+    const r = await saveForStaff(storeWithNotes())
+    expect(r).toEqual({}) // falha da tabela privada não derruba o save
+    const menteeRows = upsertMock.mock.calls[1][0]
+    expect(menteeRows[0].data.mentee.privateNotes).toBe('segredo do advisor')
+  })
+})
+
 describe('saveForMentee — contrato de erro', () => {
   it('propaga o erro do upsert em vez de fingir sucesso', async () => {
     upsertMock.mockResolvedValue({ error: { message: 'sem permissão' } })

@@ -45,12 +45,18 @@ export default async function handler(req: any, res: any) {
     return res.status(403).json({ error: 'Apenas advisor/equipe podem criar acessos.' })
   }
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
+  let body: any = {}
+  try {
+    body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
+  } catch {
+    return res.status(400).json({ error: 'Corpo da requisição inválido.' })
+  }
   const kind: 'team' | 'mentee' = body.role === 'mentee' ? 'mentee' : 'team'
   const email = String(body.email || '').trim().toLowerCase()
   const password = String(body.password || '')
   const menteeId = String(body.menteeId || '')
   if (!email || !password) return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' })
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ error: 'E-mail inválido.' })
   if (password.length < 8) return res.status(400).json({ error: 'A senha precisa de ao menos 8 caracteres.' })
   if (kind === 'mentee' && !menteeId) return res.status(400).json({ error: 'Mentorado não informado.' })
 

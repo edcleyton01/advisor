@@ -78,10 +78,13 @@ function assembleStore(rows: MenteeRow[], shared: SharedData | null): Store {
   })
 }
 
-function sliceFor(store: Store, m: Mentee): MenteeSlice {
+// stripStaff: remove campos que o mentorado não deve receber no payload
+// (as notas privadas vivem em mentees_private, visível só para staff)
+function sliceFor(store: Store, m: Mentee, opts?: { stripStaff?: boolean }): MenteeSlice {
   const mine = <T extends { menteeId: string }>(arr: T[]) => arr.filter(x => x.menteeId === m.id)
+  const mentee = opts?.stripStaff ? { ...m, privateNotes: undefined } : m
   return {
-    mentee: m,
+    mentee,
     sales: mine(store.sales),
     campaigns: mine(store.campaigns),
     goals: mine(store.goals),
@@ -111,7 +114,18 @@ export async function loadForStaff(): Promise<Store | null> {
   ])
   if (error) throw error
   if (!rows) return null
-  return assembleStore(rows as MenteeRow[], shared)
+  const store = assembleStore(rows as MenteeRow[], shared)
+
+  // Notas privadas (mentees_private) — best-effort: antes do SQL da Fase 3
+  // a tabela não existe e as notas ainda vêm dentro do blob (comportamento antigo).
+  try {
+    const { data: priv, error: pErr } = await supabase.from('mentees_private').select('id, data')
+    if (!pErr && priv) {
+      const notes = new Map(priv.map(r => [r.id as string, (r.data?.privateNotes as string) ?? '']))
+      store.mentees = store.mentees.map(m => notes.has(m.id) ? { ...m, privateNotes: notes.get(m.id) || undefined } : m)
+    }
+  } catch { /* tabela ausente → segue sem merge */ }
+  return store
 }
 
 // Mentorado: RLS entrega só a própria linha
@@ -132,7 +146,18 @@ export async function loadForMentee(menteeId: string): Promise<Store | null> {
 export async function saveForStaff(store: Store): Promise<{ error?: string }> {
   if (!supabase) return {}
   const now = new Date().toISOString()
-  const rows = store.mentees.map(m => ({ id: m.id, data: sliceFor(store, m), updated_at: now }))
+
+  // Notas privadas primeiro (tabela só-staff). Se a gravação funcionar,
+  // as notas SAEM do blob que o mentorado lê; se falhar (SQL da Fase 3
+  // ainda não aplicado), mantém o comportamento antigo — nunca perde nota.
+  const privRows = store.mentees.map(m => ({ id: m.id, data: { privateNotes: m.privateNotes ?? '' }, updated_at: now }))
+  let stripStaff = false
+  try {
+    const { error: pErr } = await supabase.from('mentees_private').upsert(privRows)
+    stripStaff = !pErr
+  } catch { /* tabela ausente */ }
+
+  const rows = store.mentees.map(m => ({ id: m.id, data: sliceFor(store, m, { stripStaff }), updated_at: now }))
   const [r1, r2] = await Promise.all([
     supabase.from('mentees').upsert(rows),
     supabase.from('shared').upsert({ id: 'global', data: sharedFrom(store), updated_at: now }),
