@@ -9,7 +9,7 @@ const HostTag = () => cloudHost
 import { seedStore, migrateStore, ensureStoreShape, type Store } from './data'
 import {
   getIdentity, isStaff, loadForStaff, loadForMentee, saveForStaff, saveForMentee,
-  migrateFromWorkspace, type Identity,
+  migrateFromWorkspace, deleteMenteeData, type Identity,
 } from './cloud2'
 
 const EMPTY_STORE: Store = {
@@ -204,6 +204,14 @@ export default function CloudRoot() {
     if (s) { skipPersist.current = true; setStore(s); setStale(false) }
   }, [identity])
 
+  // Exclusão de mentorado: apaga a linha no banco (o save só upserta).
+  // lastSaveAt evita que o eco Realtime da própria exclusão vire banner;
+  // se falhar, o refetch restaura o estado real (o mentorado volta à lista).
+  const deleteMentee = useCallback((id: string) => {
+    lastSaveAt.current = Date.now()
+    deleteMenteeData(id).then(r => { if (r.error) refetch() })
+  }, [refetch])
+
   // Realtime: mudanças de outros usuários (Fase 2; a RLS garante que cada um só recebe o que pode ver)
   useEffect(() => {
     if (!supabase || !identity || !identity.configured) return
@@ -266,6 +274,7 @@ export default function CloudRoot() {
         cloudEmail={session.user.email ?? undefined}
         onCloudSignOut={() => signOut()}
         cloudRole={identity && !isStaff(identity.role) ? 'mentee' : undefined}
+        onCloudDeleteMentee={identity && identity.configured && isStaff(identity.role) ? deleteMentee : undefined}
       />
       {stale && (
         <button className="rt-banner" onClick={() => refetch()}>

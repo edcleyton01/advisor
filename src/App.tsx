@@ -248,9 +248,10 @@ interface AppProps {
   cloudEmail?: string           // e-mail logado (mostra rodapé + sair da conta)
   onCloudSignOut?: () => void
   cloudRole?: 'advisor' | 'mentee' // 'mentee' trava o app na jornada do próprio mentorado
+  onCloudDeleteMentee?: (id: string) => void // Fase 2: apaga a linha no banco (o save só upserta)
 }
 
-export default function App({ store: cStore, setStore: cSetStore, cloudEmail, onCloudSignOut, cloudRole }: AppProps = {}) {
+export default function App({ store: cStore, setStore: cSetStore, cloudEmail, onCloudSignOut, cloudRole, onCloudDeleteMentee }: AppProps = {}) {
   const lockedMentee = cloudRole === 'mentee'
   const cloudMode = !!cloudEmail && !lockedMentee // advisor/equipe logados na nuvem → pode criar acessos
   const [role, setRole] = useState<Role>(lockedMentee ? 'mentee' : 'advisor')
@@ -272,7 +273,9 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
   const api: Api = {
     open: setModal,
     upMentee: m => setStore(s => ({ ...s, mentees: upsert(s.mentees, m) })),
-    delMentee: id => setStore(s => ({
+    delMentee: id => {
+      onCloudDeleteMentee?.(id) // nuvem Fase 2: remove a linha do banco também
+      setStore(s => ({
       ...s,
       mentees: s.mentees.filter(m => m.id !== id),
       sales: s.sales.filter(x => x.menteeId !== id),
@@ -283,7 +286,8 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
       deals: s.deals.filter(x => x.menteeId !== id),
       calls: s.calls.filter(x => x.menteeId !== id),
       team: s.team.map(t => ({ ...t, menteeIds: t.menteeIds.filter(x => x !== id) })),
-    })),
+      }))
+    },
     upBlock: (menteeId, b) => setStore(s => ({
       ...s, mentees: s.mentees.map(m => m.id !== menteeId ? m : { ...m, blocks: upsert(m.blocks, b) }),
     })),

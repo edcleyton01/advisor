@@ -176,6 +176,34 @@ export async function saveForMentee(store: Store, menteeId: string): Promise<{ e
   return {}
 }
 
+// ---------- Excluir mentorado (linha do banco + notas privadas + anexos) ----------
+// Sem isso, o save (que só upserta) deixaria a linha órfã no banco e o
+// mentorado "excluído" reapareceria no próximo load.
+
+export async function deleteMenteeData(menteeId: string): Promise<{ error?: string }> {
+  if (!supabase) return {}
+  const [r1, r2] = await Promise.all([
+    supabase.from('mentees').delete().eq('id', menteeId),
+    supabase.from('mentees_private').delete().eq('id', menteeId),
+  ])
+  // a tabela privada pode não existir ainda (SQL da Fase 3) — só a principal é obrigatória
+  if (r1.error) { console.error('[cloud] deleteMentee:', r1.error.message); return { error: r1.error.message } }
+  if (r2.error) console.warn('[cloud] deleteMentee (private):', r2.error.message)
+
+  // anexos de evidência: best-effort (estrutura conhecida: {menteeId}/{actionId}/{arquivo})
+  try {
+    const st = supabase.storage.from('evidences')
+    const { data: dirs } = await st.list(menteeId, { limit: 100 })
+    const paths: string[] = []
+    for (const d of dirs ?? []) {
+      const { data: files } = await st.list(`${menteeId}/${d.name}`, { limit: 100 })
+      for (const f of files ?? []) paths.push(`${menteeId}/${d.name}/${f.name}`)
+    }
+    if (paths.length) await st.remove(paths)
+  } catch { /* arquivos órfãos não quebram nada; limpáveis pelo dashboard */ }
+  return {}
+}
+
 // ---------- Migração única: workspace (Fase 1) → tabelas (Fase 2) ----------
 
 export async function migrateFromWorkspace(store: Store): Promise<void> {
