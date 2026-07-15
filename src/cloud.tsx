@@ -6,7 +6,7 @@ import { supabase, cloudInitError, cloudHost, loadCloudStore, saveCloudStore, si
 const HostTag = () => cloudHost
   ? <div style={{ marginTop: 20, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--text-3)' }}>🔗 {cloudHost}</div>
   : null
-import { seedStore, migrateStore, ensureStoreShape, type Store } from './data'
+import { seedStore, migrateStore, ensureStoreShape, defaultSettings, type Store } from './data'
 import {
   getIdentity, isStaff, loadForStaff, loadForMentee, saveForStaff, saveForMentee,
   migrateFromWorkspace, deleteMenteeData, type Identity,
@@ -14,7 +14,7 @@ import {
 
 const EMPTY_STORE: Store = {
   mentees: [], team: [], playbooks: [], sales: [], campaigns: [], goals: [],
-  checkins: [], redemptions: [], deals: [], funnels: [], rewards: [], calls: [],
+  checkins: [], redemptions: [], deals: [], funnels: [], rewards: [], calls: [], settings: defaultSettings(),
 }
 
 // ---------- Tela cheia genérica (login / carregando) ----------
@@ -275,6 +275,7 @@ export default function CloudRoot() {
         onCloudSignOut={() => signOut()}
         cloudRole={identity && !isStaff(identity.role) ? 'mentee' : undefined}
         onCloudDeleteMentee={identity && identity.configured && isStaff(identity.role) ? deleteMentee : undefined}
+        isAdmin={identity ? identity.role === 'advisor' : true /* fallback Fase 1: single-user */}
       />
       {stale && (
         <button className="rt-banner" onClick={() => refetch()}>

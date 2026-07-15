@@ -14,7 +14,7 @@ export function Avatar({ m, size = 46, fontSize = 15 }: {
 
 // Redimensiona a foto no navegador antes de guardar (quadrada, JPEG leve).
 // Resultado típico: 15–35 KB — cabe tranquilo no registro do mentorado.
-export function resizePhoto(file: File, max = 256): Promise<string> {
+export function resizePhoto(file: File, max = 256, mime: 'image/jpeg' | 'image/png' = 'image/jpeg'): Promise<string> {
   return new Promise((resolve, reject) => {
     if (file.size > 10 * 1024 * 1024) return reject(new Error('Foto acima de 10 MB.'))
     const url = URL.createObjectURL(file)
@@ -28,7 +28,7 @@ export function resizePhoto(file: File, max = 256): Promise<string> {
       const ctx = canvas.getContext('2d')
       if (!ctx) return reject(new Error('Não foi possível processar a imagem.'))
       ctx.drawImage(img, sx, sy, side, side, 0, 0, canvas.width, canvas.height)
-      resolve(canvas.toDataURL('image/jpeg', 0.85))
+      resolve(canvas.toDataURL(mime, 0.85))
     }
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Arquivo não é uma imagem válida.')) }
     img.src = url

@@ -121,6 +121,56 @@ export interface CycleSnapshot {
 }
 
 // ============================================================
+//  Configurações do sistema (aba Administração — só o advisor)
+//  Vivem no registro `shared`: valem para equipe e mentorados.
+// ============================================================
+
+export type AccentId = 'amber' | 'emerald' | 'blue' | 'violet' | 'rose'
+
+export const ACCENTS: { id: AccentId; label: string; color: string; dim: string }[] = [
+  { id: 'amber',   label: 'Âmbar',     color: '#e8b34a', dim: 'rgba(232,179,74,0.14)' },
+  { id: 'emerald', label: 'Esmeralda', color: '#4ec98a', dim: 'rgba(78,201,138,0.14)' },
+  { id: 'blue',    label: 'Azul',      color: '#6ea8f7', dim: 'rgba(110,168,247,0.14)' },
+  { id: 'violet',  label: 'Violeta',   color: '#a78bf5', dim: 'rgba(167,139,245,0.14)' },
+  { id: 'rose',    label: 'Rosé',      color: '#f08bb0', dim: 'rgba(240,139,176,0.14)' },
+]
+
+export interface AppSettings {
+  appName: string
+  logo?: string     // data URL (quadrada, redimensionada no upload)
+  favicon?: string  // data URL
+  accent: AccentId
+  notifications: {
+    calls: boolean    // lembretes de call na Central de Alertas
+    checkins: boolean // alertas de check-in atrasado
+    badge: boolean    // contador vermelho no menu Alertas
+  }
+}
+
+export const defaultSettings = (): AppSettings => ({
+  appName: 'ADVISOR OS',
+  accent: 'amber',
+  notifications: { calls: true, checkins: true, badge: true },
+})
+
+// normaliza um settings vindo de fora (parcial/corrompido → completo)
+export function ensureSettings(s: any): AppSettings {
+  const d = defaultSettings()
+  if (!s || typeof s !== 'object') return d
+  return {
+    appName: typeof s.appName === 'string' && s.appName.trim() ? s.appName.trim().slice(0, 40) : d.appName,
+    logo: typeof s.logo === 'string' ? s.logo : undefined,
+    favicon: typeof s.favicon === 'string' ? s.favicon : undefined,
+    accent: ACCENTS.some(a => a.id === s.accent) ? s.accent : d.accent,
+    notifications: {
+      calls: s.notifications?.calls !== false,
+      checkins: s.notifications?.checkins !== false,
+      badge: s.notifications?.badge !== false,
+    },
+  }
+}
+
+// ============================================================
 //  Checkpoints — histórico interno de acompanhamento (SÓ EQUIPE)
 //  Nunca viaja no payload do mentorado: vive em mentees_private.
 // ============================================================
@@ -758,6 +808,7 @@ export interface Store {
   funnels: FunnelSnapshot[]
   rewards: RewardItem[]
   calls: ScheduledCall[]
+  settings: AppSettings
 }
 
 export type ModalState =
@@ -816,6 +867,7 @@ export interface Api {
   delCall: (id: string) => void
   upCheckpoint: (menteeId: string, cp: Checkpoint) => void
   delCheckpoint: (menteeId: string, cpId: string) => void
+  setSettings: (patch: Partial<AppSettings>) => void
 }
 
 // ============================================================
@@ -1285,7 +1337,8 @@ export function buildAlerts(store: Store): Alert[] {
       detail: `mais antiga: “${od[0].title}” (${fmtDate(od[0].due)})`,
     })
 
-    const hasCk = store.checkins.some(c => c.menteeId === m.id)
+    const notif = store.settings?.notifications
+    const hasCk = (notif?.checkins !== false) && store.checkins.some(c => c.menteeId === m.id)
     const thisWeek = store.checkins.some(c => c.menteeId === m.id && c.week === wk)
     const lastWeek = store.checkins.some(c => c.menteeId === m.id && c.week === shiftWeek(wk, -1))
     if (hasCk && !thisWeek && !lastWeek) out.push({
@@ -1297,9 +1350,10 @@ export function buildAlerts(store: Store): Alert[] {
       title: 'Sem check-in nesta semana', detail: 'lembre o mentorado de registrar o check-in',
     })
 
-    // lembrete de call: hoje ou amanhã
+    // lembrete de call: hoje ou amanhã (desligável na Administração)
     const t = todayIso()
-    for (const c of (store.calls ?? []).filter(c => c.menteeId === m.id && c.status === 'scheduled')) {
+    const callList = notif?.calls === false ? [] : (store.calls ?? [])
+    for (const c of callList.filter(c => c.menteeId === m.id && c.status === 'scheduled')) {
       if (c.date === t) out.push({
         id: `call-${c.id}`, kind: 'call', severity: 'warn', menteeId: m.id, menteeName: first,
         title: `Call hoje às ${c.time}`, detail: c.topic,
@@ -1337,7 +1391,7 @@ export function accessInfo(m: Mentee): AccessInfo | null {
 export const seedStore = (): Store => structuredClone({
   mentees: MENTEES, team: TEAM, sales: SALES, campaigns: CAMPAIGNS, goals: GOALS,
   checkins: CHECKINS, playbooks: PLAYBOOKS, redemptions: REDEMPTIONS, deals: DEALS,
-  funnels: FUNNEL_SNAPSHOTS, rewards: REWARD_CATALOG, calls: CALLS,
+  funnels: FUNNEL_SNAPSHOTS, rewards: REWARD_CATALOG, calls: CALLS, settings: defaultSettings(),
 })
 
 // Aplica migrações a um store salvo (localStorage ou nuvem) sem apagar edições.
@@ -1352,6 +1406,7 @@ export function migrateStore(s: any): Store | null {
   if (!s.funnels) s.funnels = structuredClone(FUNNEL_SNAPSHOTS)
   if (!s.rewards) s.rewards = structuredClone(REWARD_CATALOG)
   if (!s.calls) s.calls = []
+  s.settings = ensureSettings(s.settings)
   // novos templates da metodologia entram sem apagar edições existentes
   for (const p of PLAYBOOKS) {
     if (!s.playbooks.some((x: { id: string }) => x.id === p.id)) s.playbooks.push(structuredClone(p))
@@ -1377,5 +1432,6 @@ export function ensureStoreShape(s: any): Store {
     funnels: arr(s?.funnels),
     rewards: arr(s?.rewards),
     calls: arr(s?.calls),
+    settings: ensureSettings(s?.settings),
   }
 }

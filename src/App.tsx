@@ -3,7 +3,7 @@ import {
   PILLARS, ADVISOR, pillarById, levelForXp, actionXp, blockProgress, overallProgress, activeBlocks,
   pcolor, fmtDate, fmtBRL, todayIso, CURRENT_MONTH, monthFull, salesSummary, campaignCalc,
   upsert, effectiveStreak, menteeHealth, blockFromPlaybook, seedStore, migrateStore, buildAlerts, accessInfo,
-  SOCIAL_META, socialUrl,
+  SOCIAL_META, socialUrl, ACCENTS, ensureSettings,
   type Mentee, type PillarId, type ActionStatus, type ActionBlock, type Action,
   type Store, type ModalState, type Api, type CycleSnapshot, type Session,
 } from './data'
@@ -16,6 +16,7 @@ import { MyResults } from './results'
 import { MyEvolution } from './evolution'
 import { Avatar } from './avatar'
 import { CheckpointsSection } from './checkpoints'
+import { AdminView } from './admin'
 import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commercial'
 import { MyWeek, RewardsSection, RankingCard, AccessChip } from './week'
 import { FunnelCalculatorView, FunnelBoard } from './funnel'
@@ -261,7 +262,7 @@ function MenteeCard({ m, store, onOpen }: { m: Mentee; store: Store; onOpen: () 
 
 // ---------- App ----------
 type Role = 'advisor' | 'mentee'
-type View = 'overview' | 'alerts' | 'agenda' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'results' | 'myevolution' | 'funnel' | 'funnelboard' | 'quiz' | 'rewards'
+type View = 'overview' | 'alerts' | 'agenda' | 'admin' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'results' | 'myevolution' | 'funnel' | 'funnelboard' | 'quiz' | 'rewards'
 
 const NAV: { id: View; label: string }[] = [
   { id: 'overview', label: 'Visão geral' },
@@ -285,9 +286,10 @@ interface AppProps {
   onCloudSignOut?: () => void
   cloudRole?: 'advisor' | 'mentee' // 'mentee' trava o app na jornada do próprio mentorado
   onCloudDeleteMentee?: (id: string) => void // Fase 2: apaga a linha no banco (o save só upserta)
+  isAdmin?: boolean // true só para a conta advisor (aba Administração)
 }
 
-export default function App({ store: cStore, setStore: cSetStore, cloudEmail, onCloudSignOut, cloudRole, onCloudDeleteMentee }: AppProps = {}) {
+export default function App({ store: cStore, setStore: cSetStore, cloudEmail, onCloudSignOut, cloudRole, onCloudDeleteMentee, isAdmin }: AppProps = {}) {
   const lockedMentee = cloudRole === 'mentee'
   const cloudMode = !!cloudEmail && !lockedMentee // advisor/equipe logados na nuvem → pode criar acessos
   const [role, setRole] = useState<Role>(lockedMentee ? 'mentee' : 'advisor')
@@ -420,6 +422,7 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
     delCheckpoint: (menteeId, cpId) => setStore(s => ({
       ...s, mentees: s.mentees.map(m => m.id !== menteeId ? m : { ...m, checkpoints: (m.checkpoints ?? []).filter(c => c.id !== cpId) }),
     })),
+    setSettings: patch => setStore(s => ({ ...s, settings: ensureSettings({ ...s.settings, ...patch }) })),
   }
 
   // Seleção de perfil do mentorado
@@ -443,14 +446,29 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
 
   const openMentee = (id: string) => { setSelected(id); setView('detail') }
   const alertCount = buildAlerts(store).length
+  const admin = !lockedMentee && (isAdmin ?? true) // local/demo: sempre; nuvem: só role advisor
+  const settings = store.settings
+
+  // Branding e tema valem para o app inteiro (equipe e mentorados)
+  useEffect(() => {
+    document.title = `${settings.appName} — Acompanhamento de Mentorados`
+    const acc = ACCENTS.find(a => a.id === settings.accent) ?? ACCENTS[0]
+    const root = document.documentElement.style
+    root.setProperty('--accent', acc.color)
+    root.setProperty('--accent-dim', acc.dim)
+    const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+    if (link) link.href = settings.favicon ?? '/icon-192.png'
+  }, [settings])
 
   return (
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark">A</div>
+          {settings.logo
+            ? <img className="brand-mark" src={settings.logo} alt={settings.appName} style={{ objectFit: 'cover' }} />
+            : <div className="brand-mark">{settings.appName.trim()[0]?.toUpperCase() ?? 'A'}</div>}
           <div>
-            <div className="brand-name">ADVISOR OS</div>
+            <div className="brand-name">{settings.appName}</div>
             <div className="brand-sub">acompanhamento</div>
           </div>
         </div>
@@ -458,14 +476,21 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
         <nav className="nav">
           <div className="nav-label">{role === 'advisor' ? 'Painel do Advisor' : 'Minha Jornada'}</div>
           {role === 'advisor' ? (
-            NAV.map(n => (
-              <button key={n.id}
-                className={`nav-item ${view === n.id || (n.id === 'mentees' && view === 'detail') ? 'active' : ''}`}
-                onClick={() => setView(n.id)}>
-                <span className="dot" /> {n.label}
-                {n.id === 'alerts' && alertCount > 0 && <span className="nav-badge">{alertCount}</span>}
-              </button>
-            ))
+            <>
+              {NAV.map(n => (
+                <button key={n.id}
+                  className={`nav-item ${view === n.id || (n.id === 'mentees' && view === 'detail') ? 'active' : ''}`}
+                  onClick={() => setView(n.id)}>
+                  <span className="dot" /> {n.label}
+                  {n.id === 'alerts' && alertCount > 0 && settings.notifications.badge && <span className="nav-badge">{alertCount}</span>}
+                </button>
+              ))}
+              {admin && (
+                <button className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>
+                  <span className="dot" /> Administração
+                </button>
+              )}
+            </>
           ) : (
             <>
               <button className={`nav-item ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>
@@ -515,6 +540,7 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
         {role === 'advisor' && view === 'overview' && <Overview store={store} onOpen={openMentee} />}
         {role === 'advisor' && view === 'alerts' && <AlertsView store={store} onOpenMentee={openMentee} />}
         {role === 'advisor' && view === 'agenda' && <AgendaView store={store} api={api} onOpenMentee={openMentee} />}
+        {role === 'advisor' && view === 'admin' && admin && <AdminView store={store} api={api} adminEmail={cloudEmail} />}
         {role === 'advisor' && view === 'mentees' && <MenteesList store={store} api={api} onOpen={openMentee} />}
         {role === 'advisor' && view === 'detail' && (
           current
