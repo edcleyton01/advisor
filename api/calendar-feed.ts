@@ -8,7 +8,7 @@
 //  "Checkpoint … | Nome" / "Mentoria · Nome — pauta").
 // ============================================================
 import { createClient } from '@supabase/supabase-js'
-import { parseIcs, type GEvent } from '../src/ics'
+import { parseIcs, type GEvent } from '../src/ics.js'
 
 let cache: { at: number; events: GEvent[] } | null = null
 const TTL = 5 * 60 * 1000
