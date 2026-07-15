@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ADVISOR, CURRENT_MONTH, monthFull, shiftMonth, fmtDate, todayIso, upcomingCalls, gcalCallUrl,
   type Store, type Api, type ScheduledCall,
 } from './data'
 import { Avatar } from './avatar'
+import { fetchGoogleEvents, type GEvent } from './gcal'
 
 // quem conduz a call (mesma semântica do histórico de sessions)
 const callWho = (store: Store, withId?: string) =>
@@ -58,8 +59,26 @@ function CallRow({ c, store, api, onOpenMentee }: {
   )
 }
 
+// ---------- Linha de evento vindo do Google Agenda (leitura) ----------
+function GoogleRow({ e }: { e: GEvent }) {
+  const isToday = e.date === todayIso()
+  return (
+    <div className="call-row" style={{ opacity: 0.92 }}>
+      <div className="call-when">
+        <div className={`call-date ${isToday ? 'today' : ''}`}>{isToday ? 'hoje' : fmtDate(e.date)}</div>
+        <div className="call-time mono">{e.time ?? 'dia todo'}</div>
+      </div>
+      <div className="avatar" style={{ width: 34, height: 34, fontSize: 13, borderRadius: 10 }} title="Evento do Google Agenda">🗓</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="call-topic">{e.title}</div>
+        <div className="muted-3" style={{ fontSize: 11.5, marginTop: 2 }}>Google Agenda · edite por lá</div>
+      </div>
+    </div>
+  )
+}
+
 // ---------- Calendário do mês ----------
-function MonthCalendar({ month, calls, store, api }: { month: string; calls: ScheduledCall[]; store: Store; api: Api }) {
+function MonthCalendar({ month, calls, gevents, store, api }: { month: string; calls: ScheduledCall[]; gevents: GEvent[]; store: Store; api: Api }) {
   const [y, mo] = month.split('-').map(Number)
   const first = new Date(y, mo - 1, 1)
   const daysInMonth = new Date(y, mo, 0).getDate()
@@ -67,6 +86,7 @@ function MonthCalendar({ month, calls, store, api }: { month: string; calls: Sch
   const t = todayIso()
   const cells: (number | null)[] = [...Array(lead).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
   const byDay = (d: number) => calls.filter(c => c.date === `${month}-${String(d).padStart(2, '0')}`)
+  const gByDay = (d: number) => gevents.filter(e => e.date === `${month}-${String(d).padStart(2, '0')}`)
   return (
     <div className="card" style={{ padding: 18 }}>
       <div className="cal-grid cal-head-row">
@@ -86,6 +106,11 @@ function MonthCalendar({ month, calls, store, api }: { month: string; calls: Sch
                   <span className="mono" style={{ fontSize: 9.5 }}>{c.time}</span> {menteeFirst(store, c.menteeId)}
                 </button>
               ))}
+              {gByDay(d).map(e => (
+                <div key={e.id} className="cal-call gcal" title={`${e.time ?? 'dia todo'} · ${e.title} (Google Agenda)`}>
+                  <span className="mono" style={{ fontSize: 9.5 }}>{e.time ?? '•'}</span> {e.title}
+                </div>
+              ))}
             </div>
           )
         })}
@@ -97,9 +122,22 @@ function MonthCalendar({ month, calls, store, api }: { month: string; calls: Sch
 // ---------- View do advisor ----------
 export function AgendaView({ store, api, onOpenMentee }: { store: Store; api: Api; onOpenMentee: (id: string) => void }) {
   const [month, setMonth] = useState(CURRENT_MONTH)
+  const [gevents, setGevents] = useState<GEvent[]>([])
+  useEffect(() => { fetchGoogleEvents().then(setGevents) }, [])
   const inMonth = store.calls.filter(c => c.date.startsWith(month) && c.status !== 'canceled')
+  const gInMonth = gevents.filter(e => e.date.startsWith(month))
   const upcoming = upcomingCalls(store.calls)
+  const gUpcoming = gevents.filter(e => e.date >= todayIso())
   const doneCount = store.calls.filter(c => c.date.startsWith(month) && c.status === 'done').length
+  // lista mesclada por data/hora: calls do app + eventos do Google
+  const merged: ({ kind: 'call'; c: (typeof upcoming)[number] } | { kind: 'g'; e: GEvent })[] = [
+    ...upcoming.map(c => ({ kind: 'call' as const, c })),
+    ...gUpcoming.map(e => ({ kind: 'g' as const, e })),
+  ].sort((a, b) => {
+    const ka = a.kind === 'call' ? a.c.date + a.c.time : a.e.date + (a.e.time ?? '00:00')
+    const kb = b.kind === 'call' ? b.c.date + b.c.time : b.e.date + (b.e.time ?? '00:00')
+    return ka.localeCompare(kb)
+  })
   return (
     <>
       <div className="topbar"><h1>Agenda de calls</h1>
@@ -125,14 +163,19 @@ export function AgendaView({ store, api, onOpenMentee }: { store: Store; api: Ap
             </div>
             <span className="muted-3" style={{ fontSize: 12 }}>{inMonth.length} no mês · {doneCount} realizadas</span>
           </div>
-          <MonthCalendar month={month} calls={inMonth} store={store} api={api} />
+          <MonthCalendar month={month} calls={inMonth} gevents={gInMonth} store={store} api={api} />
         </div>
 
         <div className="section">
-          <div className="section-head"><div className="h2">Próximas calls</div></div>
+          <div className="section-head">
+            <div className="h2">Próximas calls</div>
+            {gevents.length > 0 && <span className="muted-3" style={{ fontSize: 12 }}>🗓 {gUpcoming.length} do Google Agenda</span>}
+          </div>
           <div className="card" style={{ padding: 10 }}>
-            {upcoming.length
-              ? upcoming.map(c => <CallRow key={c.id} c={c} store={store} api={api} onOpenMentee={onOpenMentee} />)
+            {merged.length
+              ? merged.slice(0, 30).map(it => it.kind === 'call'
+                  ? <CallRow key={it.c.id} c={it.c} store={store} api={api} onOpenMentee={onOpenMentee} />
+                  : <GoogleRow key={it.e.id} e={it.e} />)
               : <div className="empty">Nenhuma call agendada. Agende a primeira.</div>}
           </div>
         </div>
@@ -143,16 +186,28 @@ export function AgendaView({ store, api, onOpenMentee }: { store: Store; api: Ap
 
 // ---------- Card do mentorado: próxima call ----------
 export function NextCallCard({ store, menteeId }: { store: Store; menteeId: string }) {
-  const next = upcomingCalls(store.calls, menteeId)[0]
+  const [g, setG] = useState<GEvent | null>(null)
+  useEffect(() => {
+    fetchGoogleEvents().then(evs => {
+      const next = evs.filter(e => e.date >= todayIso() && e.time).sort((a, b) => (a.date + a.time!).localeCompare(b.date + b.time!))[0]
+      setG(next ?? null)
+    })
+  }, [])
+  const appNext = upcomingCalls(store.calls, menteeId)[0]
+  // ganha o que vier primeiro (app × Google)
+  const useG = g && (!appNext || (g.date + (g.time ?? '')) < (appNext.date + appNext.time))
+  const next = useG
+    ? { id: g!.id, menteeId, date: g!.date, time: g!.time!, topic: g!.title, status: 'scheduled' as const }
+    : appNext
   if (!next) return null
-  const who = callWho(store, next.withId)
+  const who = useG ? { label: 'Google Agenda', name: '' } : callWho(store, next.withId)
   const isToday = next.date === todayIso()
   return (
     <div className="card next-call">
       <div className="eyebrow" style={{ color: 'var(--accent)' }}>◷ {isToday ? 'Sua call é hoje' : 'Próxima call'}</div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: 10, flexWrap: 'wrap' }}>
         <span className="display" style={{ fontSize: 22 }}>{isToday ? 'Hoje' : fmtDate(next.date)} · {next.time}</span>
-        <span className="tag">{who.label} · {who.name}</span>
+        <span className="tag">{who.label}{who.name ? ` · ${who.name}` : ''}</span>
       </div>
       <div className="muted" style={{ marginTop: 8, fontSize: 13.5 }}>{next.topic}</div>
       <a className="btn ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 14, padding: '7px 14px', fontSize: 12 }}
