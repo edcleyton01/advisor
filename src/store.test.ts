@@ -32,9 +32,10 @@ describe('settings (Administração)', () => {
       expect(st.notifications).toEqual({ calls: true, checkins: true, badge: true })
     }
   })
-  it('preserva valores válidos e descarta inválidos', () => {
-    const st = ensureSettings({ appName: '  Mentory OS  ', accent: 'roxo-inexistente', notifications: { calls: false } })
-    expect(st.appName).toBe('Mentory OS')
+  it('preserva valores válidos (incl. espaços — trim só no blur do campo) e descarta inválidos', () => {
+    const st = ensureSettings({ appName: 'Mentory OS ', accent: 'roxo-inexistente', notifications: { calls: false } })
+    expect(st.appName).toBe('Mentory OS ') // espaço preservado durante a digitação
+    expect(st.tagline).toBe('acompanhamento')
     expect(st.accent).toBe('amber') // inválido → padrão
     expect(st.notifications.calls).toBe(false)
     expect(st.notifications.badge).toBe(true)

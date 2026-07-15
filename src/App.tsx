@@ -482,7 +482,7 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
             : <div className="brand-mark">{settings.appName.trim()[0]?.toUpperCase() ?? 'A'}</div>}
           <div>
             <div className="brand-name">{settings.appName}</div>
-            <div className="brand-sub">acompanhamento</div>
+            <div className="brand-sub">{settings.tagline}</div>
           </div>
         </div>
 

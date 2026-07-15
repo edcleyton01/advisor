@@ -84,7 +84,13 @@ export function AdminView({ store, api, adminEmail }: { store: Store; api: Api; 
               <span>Nome do sistema</span>
               <input className="in" value={s.appName} maxLength={40}
                 onChange={e => set({ appName: e.target.value })}
-                onBlur={e => { if (!e.target.value.trim()) set({ appName: defaultSettings().appName }) }} />
+                onBlur={e => set({ appName: e.target.value.trim() || defaultSettings().appName })} />
+            </label>
+            <label className="field span2" style={{ maxWidth: 420 }}>
+              <span>Slogan (aparece sob o nome, na barra lateral)</span>
+              <input className="in" value={s.tagline} maxLength={60}
+                onChange={e => set({ tagline: e.target.value })}
+                onBlur={e => set({ tagline: e.target.value.trim() || defaultSettings().tagline })} />
             </label>
             <ImagePicker label="Logo" hint="Aparece na barra lateral. Quadrada, até 10 MB — redimensionada para 128px."
               value={s.logo} size={128} mime="image/png" onChange={logo => set({ logo })} />

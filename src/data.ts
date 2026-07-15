@@ -137,6 +137,7 @@ export const ACCENTS: { id: AccentId; label: string; color: string; dim: string 
 
 export interface AppSettings {
   appName: string
+  tagline: string  // slogan sob o nome na barra lateral
   logo?: string     // data URL (quadrada, redimensionada no upload)
   favicon?: string  // data URL
   accent: AccentId
@@ -149,6 +150,7 @@ export interface AppSettings {
 
 export const defaultSettings = (): AppSettings => ({
   appName: 'ADVISOR OS',
+  tagline: 'acompanhamento',
   accent: 'amber',
   notifications: { calls: true, checkins: true, badge: true },
 })
@@ -158,7 +160,8 @@ export function ensureSettings(s: any): AppSettings {
   const d = defaultSettings()
   if (!s || typeof s !== 'object') return d
   return {
-    appName: typeof s.appName === 'string' && s.appName.trim() ? s.appName.trim().slice(0, 40) : d.appName,
+    appName: typeof s.appName === 'string' && s.appName.trim() ? s.appName.slice(0, 40) : d.appName,
+    tagline: typeof s.tagline === 'string' && s.tagline.trim() ? s.tagline.slice(0, 60) : d.tagline,
     logo: typeof s.logo === 'string' ? s.logo : undefined,
     favicon: typeof s.favicon === 'string' ? s.favicon : undefined,
     accent: ACCENTS.some(a => a.id === s.accent) ? s.accent : d.accent,
