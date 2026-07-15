@@ -1317,6 +1317,11 @@ const ALERT_META: Record<AlertKind, { icon: string; label: string }> = {
 }
 export const alertMeta = (k: AlertKind) => ALERT_META[k]
 
+// Impressão digital do alerta no estado atual: marca de "lido" vale para
+// ESTE estado — se o alerta mudar (ex.: mais uma ação atrasada), a
+// impressão muda e ele volta como não-lido.
+export const alertFingerprint = (a: Alert) => `${a.id}|${a.title}|${a.detail}`
+
 export function buildAlerts(store: Store): Alert[] {
   const out: Alert[] = []
   const wk = weekKey()

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   PILLARS, ADVISOR, DEAL_STAGES, pillarById, pcolor, fmtBRL, fmtDate, monthLabel, monthFull,
   CURRENT_MONTH, buildAgenda, insightsFor, computeBadges, actionXp, overallProgress, levelForXp,
-  effectiveStreak, salesSummary, campaignCalc, funnelById, monthActuals, buildAlerts, alertMeta,
+  effectiveStreak, salesSummary, campaignCalc, funnelById, monthActuals, buildAlerts, alertMeta, alertFingerprint, type Alert,
   type Mentee, type Store, type Api, type Deal, type DealStage,
 } from './data'
 
@@ -118,48 +118,83 @@ export function RewardsAdmin({ store, api }: { store: Store; api: Api }) {
 
 // ---------- Central de alertas (advisor) ----------
 
-export function AlertsView({ store, onOpenMentee }: { store: Store; onOpenMentee: (id: string) => void }) {
+function AlertCard({ a, read, onOpen }: { a: Alert; read?: boolean; onOpen: () => void }) {
+  const meta = alertMeta(a.kind)
+  return (
+    <div className={`card alert-card ${a.severity}`} onClick={onOpen}
+      style={read ? { opacity: 0.55 } : undefined}>
+      <div className={`alert-ic ${a.severity}`}>{meta.icon}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
+          <span className="alert-title">{a.title}</span>
+          <span className="tag">{a.menteeName}</span>
+          <span className="muted-3" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{meta.label}</span>
+          {read && <span className="tag good" style={{ fontSize: 10 }}>✓ lido</span>}
+        </div>
+        <div className="muted" style={{ fontSize: 12.5, marginTop: 5 }}>{a.detail}</div>
+      </div>
+      <span className="alert-go">abrir →</span>
+    </div>
+  )
+}
+
+export function AlertsView({ store, onOpenMentee, readSet, onReadAll }: {
+  store: Store; onOpenMentee: (id: string) => void
+  readSet: Set<string>; onReadAll: () => void
+}) {
   const alerts = buildAlerts(store)
-  const risks = alerts.filter(a => a.severity === 'risk').length
+  const unread = alerts.filter(a => !readSet.has(alertFingerprint(a)))
+  const read = alerts.filter(a => readSet.has(alertFingerprint(a)))
+  const risks = unread.filter(a => a.severity === 'risk').length
   return (
     <>
       <div className="topbar"><h1>Alertas</h1>
-        <div className="topbar-right"><span className="chip">{alerts.length} {alerts.length === 1 ? 'aviso' : 'avisos'}</span></div>
+        <div className="topbar-right">
+          <span className="chip">{unread.length} não {unread.length === 1 ? 'lido' : 'lidos'}</span>
+        </div>
       </div>
       <div className="content page-enter">
-        <div className="eyebrow">O que precisa de você</div>
-        <div className="display" style={{ marginTop: 8 }}>{alerts.length ? 'Ação recomendada' : 'Tudo em dia ✓'}</div>
-        <div className="muted" style={{ marginTop: 8, fontSize: 13.5 }}>
-          {alerts.length
-            ? <>{risks > 0 && <><b style={{ color: '#f27979' }}>{risks} em risco</b> · </>}entregas para aprovar, ações atrasadas e check-ins pendentes.</>
-            : 'Nenhuma entrega pendente, atraso ou check-in em falta. Bom trabalho.'}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
+          <div>
+            <div className="eyebrow">O que precisa de você</div>
+            <div className="display" style={{ marginTop: 8 }}>{unread.length ? 'Ação recomendada' : 'Tudo em dia ✓'}</div>
+            <div className="muted" style={{ marginTop: 8, fontSize: 13.5 }}>
+              {unread.length
+                ? <>{risks > 0 && <><b style={{ color: '#f27979' }}>{risks} em risco</b> · </>}entregas para aprovar, ações atrasadas e check-ins pendentes.</>
+                : read.length
+                  ? 'Todos os avisos foram lidos. Eles voltam sozinhos se a situação mudar.'
+                  : 'Nenhuma entrega pendente, atraso ou check-in em falta. Bom trabalho.'}
+            </div>
+          </div>
+          {unread.length > 0 && (
+            <button className="btn ghost" onClick={onReadAll}
+              title="Marca todos os avisos atuais como lidos — cada um volta sozinho se a situação dele mudar">
+              ✓ Ler todos ({unread.length})
+            </button>
+          )}
         </div>
 
-        {alerts.length > 0 && (
+        {unread.length > 0 && (
           <div className="grid stagger" style={{ marginTop: 24 }}>
-            {alerts.map(a => {
-              const meta = alertMeta(a.kind)
-              return (
-                <div key={a.id} className={`card alert-card ${a.severity}`} onClick={() => onOpenMentee(a.menteeId)}>
-                  <div className={`alert-ic ${a.severity}`}>{meta.icon}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
-                      <span className="alert-title">{a.title}</span>
-                      <span className="tag">{a.menteeName}</span>
-                      <span className="muted-3" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{meta.label}</span>
-                    </div>
-                    <div className="muted" style={{ fontSize: 12.5, marginTop: 5 }}>{a.detail}</div>
-                  </div>
-                  <span className="alert-go">abrir →</span>
-                </div>
-              )
-            })}
+            {unread.map(a => <AlertCard key={a.id} a={a} onOpen={() => onOpenMentee(a.menteeId)} />)}
           </div>
+        )}
+
+        {read.length > 0 && (
+          <details style={{ marginTop: 28 }}>
+            <summary className="muted-3" style={{ cursor: 'pointer', fontSize: 12.5, userSelect: 'none' }}>
+              Lidos ({read.length}) — clique para ver
+            </summary>
+            <div className="grid" style={{ marginTop: 14 }}>
+              {read.map(a => <AlertCard key={a.id} a={a} read onOpen={() => onOpenMentee(a.menteeId)} />)}
+            </div>
+          </details>
         )}
       </div>
     </>
   )
 }
+
 
 // ---------- Pauta automática da próxima call ----------
 

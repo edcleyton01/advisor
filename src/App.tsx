@@ -3,7 +3,7 @@ import {
   PILLARS, ADVISOR, pillarById, levelForXp, actionXp, blockProgress, overallProgress, activeBlocks,
   pcolor, fmtDate, fmtBRL, todayIso, CURRENT_MONTH, monthFull, salesSummary, campaignCalc,
   upsert, effectiveStreak, menteeHealth, blockFromPlaybook, seedStore, migrateStore, buildAlerts, accessInfo,
-  SOCIAL_META, socialUrl, ACCENTS, ensureSettings,
+  SOCIAL_META, socialUrl, ACCENTS, ensureSettings, alertFingerprint,
   type Mentee, type PillarId, type ActionStatus, type ActionBlock, type Action,
   type Store, type ModalState, type Api, type CycleSnapshot, type Session,
 } from './data'
@@ -445,7 +445,20 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
   }
 
   const openMentee = (id: string) => { setSelected(id); setView('detail') }
-  const alertCount = buildAlerts(store).length
+
+  // Alertas lidos (por navegador/dispositivo — cada membro da equipe tem o seu)
+  const READ_KEY = 'advisor-os-read-alerts'
+  const [readAlerts, setReadAlerts] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(READ_KEY) ?? '[]') } catch { return [] }
+  })
+  const markAlertsRead = (fps: string[]) => setReadAlerts(prev => {
+    const next = [...new Set([...prev, ...fps])].slice(-300)
+    try { localStorage.setItem(READ_KEY, JSON.stringify(next)) } catch { /* quota */ }
+    return next
+  })
+  const alerts = buildAlerts(store)
+  const readSet = new Set(readAlerts)
+  const alertCount = alerts.filter(a => !readSet.has(alertFingerprint(a))).length
   const admin = !lockedMentee && (isAdmin ?? true) // local/demo: sempre; nuvem: só role advisor
   const settings = store.settings
 
@@ -538,7 +551,7 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
 
       <main className="main">
         {role === 'advisor' && view === 'overview' && <Overview store={store} onOpen={openMentee} />}
-        {role === 'advisor' && view === 'alerts' && <AlertsView store={store} onOpenMentee={openMentee} />}
+        {role === 'advisor' && view === 'alerts' && <AlertsView store={store} onOpenMentee={openMentee} readSet={readSet} onReadAll={() => markAlertsRead(alerts.map(alertFingerprint))} />}
         {role === 'advisor' && view === 'agenda' && <AgendaView store={store} api={api} onOpenMentee={openMentee} />}
         {role === 'advisor' && view === 'admin' && admin && <AdminView store={store} api={api} adminEmail={cloudEmail} />}
         {role === 'advisor' && view === 'mentees' && <MenteesList store={store} api={api} onOpen={openMentee} />}
