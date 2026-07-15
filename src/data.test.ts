@@ -3,7 +3,7 @@ import {
   PILLARS, LEVELS, QUIZ, PLAYBOOKS,
   levelForXp, actionXp, overallProgress, quizScores,
   campaignCalc, salesSummary, monthActuals, funnelCalc,
-  checkinStreak, spentXp, accessInfo, socialUrl, upcomingCalls, addDaysIso,
+  checkinStreak, spentXp, accessInfo, socialUrl, upcomingCalls, addDaysIso, gcalCallUrl,
   weekKey, shiftWeek, todayIso,
   type Mentee, type ActionBlock, type Action, type CheckIn,
   type SaleEntry, type Campaign, type Redemption, type RewardItem, type ScheduledCall,
@@ -246,6 +246,22 @@ describe('addDaysIso', () => {
     expect(addDaysIso('2026-07-31', 1)).toBe('2026-08-01')
     expect(addDaysIso('2026-12-31', 1)).toBe('2027-01-01')
     expect(addDaysIso('2026-03-01', -1)).toBe('2026-02-28')
+  })
+})
+
+// ---------- gcalCallUrl ----------
+describe('gcalCallUrl', () => {
+  const call: ScheduledCall = { id: 'c1', menteeId: 'm1', date: '2026-07-20', time: '10:00', topic: 'Revisão', status: 'scheduled' }
+  it('monta o link do Google Agenda com 1h de duração e fuso de SP', () => {
+    const url = gcalCallUrl(call, { title: 'Mentoria — Revisão', details: 'Mentor: Ed' })
+    expect(url).toContain('calendar.google.com/calendar/render?action=TEMPLATE')
+    expect(url).toContain('dates=20260720T100000/20260720T110000')
+    expect(url).toContain(`text=${encodeURIComponent('Mentoria — Revisão')}`)
+    expect(url).toContain('ctz=America/Sao_Paulo')
+  })
+  it('vira o dia quando a call é 23:30', () => {
+    const url = gcalCallUrl({ ...call, time: '23:30' }, { title: 'x' })
+    expect(url).toContain('dates=20260720T233000/20260721T003000')
   })
 })
 

@@ -1222,6 +1222,22 @@ export const addDaysIso = (iso: string, n: number) => {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
 }
 
+// Link "adicionar ao Google Agenda" (sem OAuth: o evento entra na conta
+// de quem clica). Duração padrão de 1h; fuso de São Paulo.
+export function gcalCallUrl(c: ScheduledCall, opts: { title: string; details?: string; durationMin?: number }): string {
+  const [y, mo, dd] = c.date.split('-').map(Number)
+  const [h, mi] = c.time.split(':').map(Number)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const stamp = (dt: Date) => `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`
+  const start = new Date(y, mo - 1, dd, h, mi)
+  const end = new Date(y, mo - 1, dd, h, mi + (opts.durationMin ?? 60))
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+    + `&text=${encodeURIComponent(opts.title)}`
+    + `&dates=${stamp(start)}/${stamp(end)}`
+    + `&details=${encodeURIComponent(opts.details ?? '')}`
+    + '&ctz=America/Sao_Paulo'
+}
+
 // Próximas calls agendadas (hoje em diante), mais próxima primeiro
 export function upcomingCalls(calls: ScheduledCall[], menteeId?: string): ScheduledCall[] {
   const t = todayIso()

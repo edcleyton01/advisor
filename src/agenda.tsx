@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  ADVISOR, CURRENT_MONTH, monthFull, shiftMonth, fmtDate, todayIso, upcomingCalls,
+  ADVISOR, CURRENT_MONTH, monthFull, shiftMonth, fmtDate, todayIso, upcomingCalls, gcalCallUrl,
   type Store, type Api, type ScheduledCall,
 } from './data'
 import { Avatar } from './avatar'
@@ -43,6 +43,11 @@ function CallRow({ c, store, api, onOpenMentee }: {
         </div>
       </div>
       <div className="call-actions">
+        <button className="icon-btn" style={{ opacity: 1 }} title="Adicionar ao Google Agenda"
+          onClick={() => window.open(gcalCallUrl(c, {
+            title: `Mentoria · ${menteeFirst(store, c.menteeId)} — ${c.topic}`,
+            details: `${who.label}: ${who.name} · ADVISOR OS`,
+          }), '_blank', 'noopener')}>📅</button>
         <button className="btn ghost" style={{ padding: '6px 12px', fontSize: 12 }} title="Marcar como realizada e registrar a call"
           onClick={register}>✓ Registrar</button>
         <button className="icon-btn" title="Editar" onClick={() => api.open({ kind: 'call', call: c })}>✎</button>
@@ -150,6 +155,9 @@ export function NextCallCard({ store, menteeId }: { store: Store; menteeId: stri
         <span className="tag">{who.label} · {who.name}</span>
       </div>
       <div className="muted" style={{ marginTop: 8, fontSize: 13.5 }}>{next.topic}</div>
+      <a className="btn ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 14, padding: '7px 14px', fontSize: 12 }}
+        href={gcalCallUrl(next, { title: `Mentoria — ${next.topic}`, details: `${who.label}: ${who.name} · Programa ADVISOR` })}
+        target="_blank" rel="noopener noreferrer">📅 Adicionar à minha agenda</a>
     </div>
   )
 }

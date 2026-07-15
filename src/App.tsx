@@ -994,6 +994,10 @@ function Journey({ m, store, api, onLogout }: { m: Mentee; store: Store; api: Ap
           </div>
         </div>
 
+        <div style={{ marginTop: 16 }}>
+          <NextCallCard store={store} menteeId={m.id} />
+        </div>
+
         {nextStep && (
           <div className="card" style={{ marginTop: 16, borderColor: 'rgba(78,201,138,0.25)', background: 'var(--good-dim)' }}>
             <div className="eyebrow" style={{ color: 'var(--good)' }}>Seu próximo passo combinado</div>
