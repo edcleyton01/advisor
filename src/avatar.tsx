@@ -14,20 +14,32 @@ export function Avatar({ m, size = 46, fontSize = 15 }: {
 
 // Redimensiona a foto no navegador antes de guardar (quadrada, JPEG leve).
 // Resultado típico: 15–35 KB — cabe tranquilo no registro do mentorado.
-export function resizePhoto(file: File, max = 256, mime: 'image/jpeg' | 'image/png' = 'image/jpeg'): Promise<string> {
+export function resizePhoto(
+  file: File, max = 256,
+  mime: 'image/jpeg' | 'image/png' = 'image/jpeg',
+  fit: 'cover' | 'contain' = 'cover', // cover = crop quadrado (avatares); contain = imagem inteira, fundo transparente (logos PNG)
+): Promise<string> {
   return new Promise((resolve, reject) => {
     if (file.size > 10 * 1024 * 1024) return reject(new Error('Foto acima de 10 MB.'))
     const url = URL.createObjectURL(file)
     const img = new Image()
     img.onload = () => {
       URL.revokeObjectURL(url)
-      const side = Math.min(img.width, img.height)
-      const sx = (img.width - side) / 2, sy = (img.height - side) / 2 // crop central quadrado
       const canvas = document.createElement('canvas')
-      canvas.width = canvas.height = Math.min(max, side)
       const ctx = canvas.getContext('2d')
       if (!ctx) return reject(new Error('Não foi possível processar a imagem.'))
-      ctx.drawImage(img, sx, sy, side, side, 0, 0, canvas.width, canvas.height)
+      if (fit === 'contain') {
+        // imagem inteira dentro do quadrado; sobras ficam TRANSPARENTES (PNG)
+        canvas.width = canvas.height = max
+        const scale = Math.min(max / img.width, max / img.height, 1)
+        const dw = img.width * scale, dh = img.height * scale
+        ctx.drawImage(img, (max - dw) / 2, (max - dh) / 2, dw, dh)
+      } else {
+        const side = Math.min(img.width, img.height)
+        const sx = (img.width - side) / 2, sy = (img.height - side) / 2 // crop central quadrado
+        canvas.width = canvas.height = Math.min(max, side)
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, canvas.width, canvas.height)
+      }
       resolve(canvas.toDataURL(mime, 0.85))
     }
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Arquivo não é uma imagem válida.')) }

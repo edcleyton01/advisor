@@ -8,9 +8,10 @@ import { resizePhoto } from './avatar'
 //  e vale para toda a equipe e mentorados.
 // ============================================================
 
-function ImagePicker({ label, hint, value, size, mime, onChange }: {
+function ImagePicker({ label, hint, value, size, mime, fit = 'cover', onChange }: {
   label: string; hint: string; value?: string; size: number
   mime: 'image/jpeg' | 'image/png'
+  fit?: 'cover' | 'contain'
   onChange: (dataUrl?: string) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -18,7 +19,7 @@ function ImagePicker({ label, hint, value, size, mime, onChange }: {
   const pick = async (file?: File) => {
     if (!file) return
     setErr(null)
-    try { onChange(await resizePhoto(file, size, mime)) }
+    try { onChange(await resizePhoto(file, size, mime, fit)) }
     catch (e: any) { setErr(e?.message ?? 'Falha ao processar a imagem.') }
   }
   return (
@@ -26,7 +27,7 @@ function ImagePicker({ label, hint, value, size, mime, onChange }: {
       <div className="stat-label" style={{ marginBottom: 8 }}>{label}</div>
       <div className="photo-edit">
         {value
-          ? <img src={value} alt={label} style={{ width: 52, height: 52, borderRadius: 12, objectFit: 'cover', border: '1px solid var(--line-2)' }} />
+          ? <img src={value} alt={label} style={{ width: 52, height: 52, borderRadius: 12, objectFit: fit, border: '1px solid var(--line-2)' }} />
           : <div className="avatar" style={{ width: 52, height: 52, fontSize: 18 }}>—</div>}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="btn ghost" style={{ padding: '7px 14px', fontSize: 12 }}
@@ -92,10 +93,10 @@ export function AdminView({ store, api, adminEmail }: { store: Store; api: Api; 
                 onChange={e => set({ tagline: e.target.value })}
                 onBlur={e => set({ tagline: e.target.value.trim() || defaultSettings().tagline })} />
             </label>
-            <ImagePicker label="Logo" hint="Aparece na barra lateral. Quadrada, até 10 MB — redimensionada para 128px."
-              value={s.logo} size={128} mime="image/png" onChange={logo => set({ logo })} />
-            <ImagePicker label="Favicon" hint="Ícone da aba do navegador. Redimensionado para 64px."
-              value={s.favicon} size={64} mime="image/png" onChange={favicon => set({ favicon })} />
+            <ImagePicker label="Logo" hint="Aparece na barra lateral. PNG com fundo transparente cai perfeito — a imagem entra inteira, sem corte nem fundo."
+              value={s.logo} size={128} mime="image/png" fit="contain" onChange={logo => set({ logo })} />
+            <ImagePicker label="Favicon" hint="Ícone da aba do navegador. Redimensionado para 64px, transparência preservada."
+              value={s.favicon} size={64} mime="image/png" fit="contain" onChange={favicon => set({ favicon })} />
           </div>
         </div>
 

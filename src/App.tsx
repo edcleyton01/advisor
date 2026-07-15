@@ -478,7 +478,7 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
       <aside className="sidebar">
         <div className="brand">
           {settings.logo
-            ? <img className="brand-mark" src={settings.logo} alt={settings.appName} style={{ objectFit: 'cover' }} />
+            ? <img className="brand-mark brand-logo" src={settings.logo} alt={settings.appName} />
             : <div className="brand-mark">{settings.appName.trim()[0]?.toUpperCase() ?? 'A'}</div>}
           <div>
             <div className="brand-name">{settings.appName}</div>

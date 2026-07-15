@@ -68,6 +68,9 @@ a { color: inherit; text-decoration: none; }
   display: grid; place-items: center; color: #1a1206; font-weight: 800; font-size: 15px;
   box-shadow: 0 6px 18px -6px rgba(232,179,74,0.5);
 }
+/* logo customizada: fundo transparente (recebe bem PNGs), sem crop */
+.brand-mark.brand-logo { background: none; box-shadow: none; object-fit: contain; }
+
 .brand-name { font-size: 15px; font-weight: 650; letter-spacing: -0.02em; }
 .brand-sub { font-size: 11px; color: var(--text-3); font-family: var(--mono); letter-spacing: 0.02em; }
 
