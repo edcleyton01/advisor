@@ -1,13 +1,14 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import {
   PILLARS, FUNNELS, CAMPAIGN_STATUS, DEAL_STAGES, ADVISOR, campaignCalc, fmtBRL, CURRENT_MONTH,
-  pillarById, pcolor, actionXp, overallProgress, levelForXp,
-  type Mentee, type ActionBlock, type Action, type Session, type TeamMember,
+  pillarById, pcolor, actionXp, overallProgress, levelForXp, SOCIAL_META,
+  type Mentee, type ActionBlock, type Action, type Session, type TeamMember, type SocialLinks,
   type SaleEntry, type Campaign, type PillarId, type FunnelId, type CampaignStatus,
   type MonthlyGoal, type Playbook, type PlaybookAction, type Deal, type DealStage, type Store,
   type RewardItem, type ScheduledCall,
 } from './data'
 import { createMenteeLogin, createTeamLogin } from './cloud2'
+import { Avatar, resizePhoto } from './avatar'
 
 const uid = () => Math.random().toString(36).slice(2, 10)
 const today = () => new Date().toISOString().slice(0, 10)
@@ -72,20 +73,63 @@ function blankMentee(): Mentee {
 
 export function MenteeForm({ initial, onSave, onClose }: { initial?: Mentee; onSave: (m: Mentee) => void; onClose: () => void }) {
   const [f, setF] = useState<Mentee>(() => (initial ? structuredClone(initial) : blankMentee()))
+  const [photoErr, setPhotoErr] = useState<string | null>(null)
+  const photoInput = useRef<HTMLInputElement>(null)
   const set = <K extends keyof Mentee>(k: K, v: Mentee[K]) => setF(p => ({ ...p, [k]: v }))
+  const setSocial = (k: keyof SocialLinks, v: string) =>
+    setF(p => ({ ...p, socials: { ...p.socials, [k]: v || undefined } }))
   const setScore = (id: PillarId, key: 'baseline' | 'current', v: number) =>
     setF(p => ({ ...p, scores: { ...p.scores, [id]: { ...p.scores[id], [key]: Math.max(0, Math.min(10, v)) } } }))
   const ok = f.name.trim().length > 1 && f.business.trim().length > 0
   const save = () => { onSave({ ...f, initials: initialsOf(f.name) }); onClose() }
+  const pickPhoto = async (file?: File) => {
+    if (!file) return
+    setPhotoErr(null)
+    try { set('photo', await resizePhoto(file)) } catch (e: any) { setPhotoErr(e?.message ?? 'Falha ao processar a foto.') }
+  }
   return (
     <Modal title={initial ? 'Editar mentorado' : 'Novo mentorado'} onClose={onClose}>
       <div className="form-grid">
+        <div className="span2 photo-edit">
+          <Avatar m={{ ...f, initials: initialsOf(f.name) }} size={56} fontSize={18} />
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button type="button" className="btn ghost" style={{ padding: '7px 14px', fontSize: 12 }}
+              onClick={() => photoInput.current?.click()}>⬆ {f.photo ? 'Trocar foto' : 'Enviar foto'}</button>
+            {f.photo && (
+              <button type="button" className="btn ghost" style={{ padding: '7px 14px', fontSize: 12 }}
+                onClick={() => set('photo', undefined)}>Remover</button>
+            )}
+            {photoErr && <span className="login-err" style={{ padding: '4px 10px' }}>{photoErr}</span>}
+          </div>
+          <input ref={photoInput} type="file" accept="image/*" style={{ display: 'none' }}
+            onChange={e => { pickPhoto(e.target.files?.[0]); e.target.value = '' }} />
+        </div>
         <Field label="Nome completo" span2>
           <input className="in" value={f.name} onChange={e => set('name', e.target.value)} placeholder="Nome do mentorado" />
         </Field>
-        <Field label="Negócio">
+        <Field label="Empresa">
           <input className="in" value={f.business} onChange={e => set('business', e.target.value)} placeholder="Nome da empresa · segmento" />
         </Field>
+        <Field label="Cargo">
+          <input className="in" value={f.jobTitle ?? ''} onChange={e => set('jobTitle', e.target.value || undefined)} placeholder="Ex.: Fundadora & CEO" />
+        </Field>
+        <Field label="E-mail">
+          <input className="in" type="email" value={f.email ?? ''} onChange={e => set('email', e.target.value || undefined)} placeholder="contato@empresa.com.br" />
+        </Field>
+        <Field label="Telefone (com DDD)">
+          <input className="in" type="tel" value={f.phone ?? ''} onChange={e => set('phone', e.target.value || undefined)} placeholder="(11) 99999-9999" />
+        </Field>
+        <div className="span2">
+          <div className="field" style={{ marginBottom: 8 }}><span>Redes sociais · @handle ou URL</span></div>
+          <div className="form-grid" style={{ marginTop: 0 }}>
+            {SOCIAL_META.map(sm => (
+              <Field key={sm.id} label={sm.label}>
+                <input className="in" value={f.socials?.[sm.id] ?? ''}
+                  onChange={e => setSocial(sm.id, e.target.value)} placeholder={`@${sm.id === 'linkedin' ? 'perfil' : 'usuario'}`} />
+              </Field>
+            ))}
+          </div>
+        </div>
         <Field label="Nicho">
           <input className="in" value={f.niche} onChange={e => set('niche', e.target.value)} />
         </Field>

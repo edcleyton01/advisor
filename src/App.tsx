@@ -3,6 +3,7 @@ import {
   PILLARS, ADVISOR, pillarById, levelForXp, actionXp, blockProgress, overallProgress, activeBlocks,
   pcolor, fmtDate, fmtBRL, todayIso, CURRENT_MONTH, monthFull, salesSummary, campaignCalc,
   upsert, effectiveStreak, menteeHealth, blockFromPlaybook, seedStore, migrateStore, buildAlerts, accessInfo,
+  SOCIAL_META, socialUrl,
   type Mentee, type PillarId, type ActionStatus, type ActionBlock, type Action,
   type Store, type ModalState, type Api, type CycleSnapshot, type Session,
 } from './data'
@@ -13,6 +14,7 @@ import {
 import { AgendaView, NextCallCard } from './agenda'
 import { MyResults } from './results'
 import { MyEvolution } from './evolution'
+import { Avatar } from './avatar'
 import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commercial'
 import { MyWeek, RewardsSection, RankingCard, AccessChip } from './week'
 import { FunnelCalculatorView, FunnelBoard } from './funnel'
@@ -187,6 +189,37 @@ function ActionBlockView({ block, onToggle, interactive, tools, onComment, mente
   )
 }
 
+// ---------- Dados do mentorado (card de perfil, edição pelo time) ----------
+function ProfileCard({ m, api }: { m: Mentee; api: Api }) {
+  const socials = SOCIAL_META.filter(sm => m.socials?.[sm.id]?.trim())
+  const na = <span className="muted-3">não informado</span>
+  return (
+    <div className="card" style={{ marginTop: 16 }}>
+      <div className="section-head" style={{ marginBottom: 14 }}>
+        <div className="h2" style={{ fontSize: 16 }}>Dados do mentorado</div>
+        <button className="btn ghost" style={{ padding: '6px 12px', fontSize: 12 }}
+          onClick={() => api.open({ kind: 'mentee', mentee: m })}>✎ Editar dados</button>
+      </div>
+      <dl className="profile-rows">
+        <dt>Nome</dt><dd>{m.name}</dd>
+        <dt>Empresa</dt><dd>{m.business}{m.jobTitle ? <span className="muted-3"> · {m.jobTitle}</span> : ''}</dd>
+        <dt>Nicho</dt><dd>{m.niche || na}</dd>
+        <dt>E-mail</dt><dd>{m.email ? <a href={`mailto:${m.email}`}>{m.email}</a> : na}</dd>
+        <dt>Telefone</dt><dd>{m.phone ? <a href={`tel:+55${m.phone.replace(/\D/g, '')}`}>{m.phone}</a> : na}</dd>
+        <dt>Redes</dt>
+        <dd>{socials.length
+          ? <div className="social-chips">{socials.map(sm => (
+              <a key={sm.id} href={socialUrl(sm.id, m.socials![sm.id]!)} target="_blank" rel="noopener noreferrer">
+                {sm.label} ↗
+              </a>
+            ))}</div>
+          : na}</dd>
+        <dt>Entrada</dt><dd>{fmtDate(m.startDate)}</dd>
+      </dl>
+    </div>
+  )
+}
+
 // ---------- Mentee card (advisor list) ----------
 function MenteeCard({ m, store, onOpen }: { m: Mentee; store: Store; onOpen: () => void }) {
   const xp = actionXp(m)
@@ -200,7 +233,7 @@ function MenteeCard({ m, store, onOpen }: { m: Mentee; store: Store; onOpen: () 
   return (
     <div className="card hover mentee-card" onClick={onOpen}>
       <div className="mentee-head">
-        <div className="avatar">{m.initials}</div>
+        <Avatar m={m} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="mentee-name">{m.name}</div>
           <div className="mentee-biz">{m.business}</div>
@@ -585,7 +618,7 @@ function LoginView({ mentees, onLogin }: { mentees: Mentee[]; onLogin: (id: stri
         <div className="login-people">
           {mentees.map(p => (
             <button key={p.id} className="login-person" onClick={() => onLogin(p.id)}>
-              <span className="avatar" style={{ width: 44, height: 44, fontSize: 14 }}>{p.initials}</span>
+              <Avatar m={p} size={44} fontSize={14} />
               <span>{p.name.split(' ')[0]}</span>
             </button>
           ))}
@@ -769,7 +802,7 @@ function Detail({ m, store, api, onBack, cloudMode }: { m: Mentee; store: Store;
         <button className="back" onClick={onBack}>← Voltar</button>
 
         <div className="hero-line">
-          <div className="avatar" style={{ width: 60, height: 60, fontSize: 20 }}>{m.initials}</div>
+          <Avatar m={m} size={60} fontSize={20} />
           <div style={{ flex: 1, minWidth: 260 }}>
             <div className="display" style={{ fontSize: 25 }}>{m.name}</div>
             <div className="muted" style={{ marginTop: 4 }}>{m.business} · {m.niche}</div>
@@ -806,6 +839,8 @@ function Detail({ m, store, api, onBack, cloudMode }: { m: Mentee; store: Store;
           <div className="eyebrow">Objetivo do ciclo</div>
           <div style={{ fontSize: 16, marginTop: 8, fontWeight: 500, lineHeight: 1.5 }}>{m.macroGoal}</div>
         </div>
+
+        <ProfileCard m={m} api={api} />
 
         <div style={{ marginTop: 16 }}>
           <InsightsCard store={store} menteeId={m.id} />
@@ -922,7 +957,7 @@ function Journey({ m, store, api, onLogout }: { m: Mentee; store: Store; api: Ap
         <div className="topbar-right">
           <AccessChip m={m} />
           <span className="chip">{m.cycle}</span>
-          <div className="avatar" style={{ width: 34, height: 34, fontSize: 12 }}>{m.initials}</div>
+          <Avatar m={m} size={34} fontSize={12} />
           <button className="btn ghost" style={{ padding: '7px 12px', fontSize: 12 }} onClick={onLogout}>Trocar perfil</button>
         </div>
       </div>

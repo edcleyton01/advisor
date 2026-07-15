@@ -120,10 +120,32 @@ export interface CycleSnapshot {
   scores: Record<PillarId, { baseline: number; current: number }>
 }
 
+export interface SocialLinks { instagram?: string; youtube?: string; linkedin?: string; tiktok?: string }
+
+// Redes suportadas no cadastro: aceita @handle ou URL completa
+export const SOCIAL_META: { id: keyof SocialLinks; label: string; base: string }[] = [
+  { id: 'instagram', label: 'Instagram', base: 'https://instagram.com/' },
+  { id: 'youtube',   label: 'YouTube',   base: 'https://youtube.com/@' },
+  { id: 'linkedin',  label: 'LinkedIn',  base: 'https://linkedin.com/in/' },
+  { id: 'tiktok',    label: 'TikTok',    base: 'https://tiktok.com/@' },
+]
+
+export function socialUrl(kind: keyof SocialLinks, value: string): string {
+  const v = value.trim()
+  if (/^https?:\/\//i.test(v)) return v
+  const handle = v.replace(/^@/, '')
+  return SOCIAL_META.find(s => s.id === kind)!.base + handle
+}
+
 export interface Mentee {
   id: string
   name: string
   initials: string
+  photo?: string    // foto de perfil (data URL, redimensionada no upload)
+  jobTitle?: string // cargo na empresa
+  email?: string
+  phone?: string
+  socials?: SocialLinks
   business: string
   niche: string
   revenue: string
@@ -239,6 +261,10 @@ export const MENTEES: Mentee[] = [
     id: 'ana',
     name: 'Ana Beatriz Lemos',
     initials: 'AL',
+    jobTitle: 'Fundadora & CEO',
+    email: 'ana@lemosconsultoria.com.br',
+    phone: '(11) 98765-4321',
+    socials: { instagram: '@analemos.consultoria', linkedin: 'ana-beatriz-lemos', youtube: '@analemos' },
     business: 'Lemos Consultoria · Estratégia Comercial',
     niche: 'Consultoria high ticket para PMEs',
     revenue: 'R$ 85k/mês',

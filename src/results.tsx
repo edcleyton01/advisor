@@ -4,6 +4,7 @@ import {
   type Mentee, type Store, type FunnelId,
 } from './data'
 import { AccessChip } from './week'
+import { Avatar } from './avatar'
 
 // ============================================================
 //  Meus resultados — painel de dados do mentorado
@@ -164,7 +165,7 @@ export function MyResults({ m, store, onLogout }: { m: Mentee; store: Store; onL
         <div className="topbar-right">
           <AccessChip m={m} />
           <span className="chip">{monthFull(CURRENT_MONTH)}</span>
-          <div className="avatar" style={{ width: 34, height: 34, fontSize: 12 }}>{m.initials}</div>
+          <Avatar m={m} size={34} fontSize={12} />
           <button className="btn ghost" style={{ padding: '7px 12px', fontSize: 12 }} onClick={onLogout}>Trocar perfil</button>
         </div>
       </div>

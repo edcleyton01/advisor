@@ -3,6 +3,7 @@ import {
   ADVISOR, CURRENT_MONTH, monthFull, shiftMonth, fmtDate, todayIso, upcomingCalls,
   type Store, type Api, type ScheduledCall,
 } from './data'
+import { Avatar } from './avatar'
 
 // quem conduz a call (mesma semântica do histórico de sessions)
 const callWho = (store: Store, withId?: string) =>
@@ -30,8 +31,11 @@ function CallRow({ c, store, api, onOpenMentee }: {
         <div className={`call-date ${isToday ? 'today' : ''}`}>{isToday ? 'hoje' : fmtDate(c.date)}</div>
         <div className="call-time mono">{c.time}</div>
       </div>
-      <button className="avatar" style={{ width: 34, height: 34, fontSize: 12, cursor: onOpenMentee ? 'pointer' : 'default', border: 'none' }}
-        title={m?.name} onClick={() => onOpenMentee?.(c.menteeId)}>{m?.initials ?? '?'}</button>
+      <button style={{ background: 'none', border: 'none', padding: 0, cursor: onOpenMentee ? 'pointer' : 'default' }}
+        title={m?.name} onClick={() => onOpenMentee?.(c.menteeId)}>
+        {m ? <Avatar m={m} size={34} fontSize={12} />
+           : <div className="avatar" style={{ width: 34, height: 34, fontSize: 12 }}>?</div>}
+      </button>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="call-topic">{c.topic}</div>
         <div className="muted-3" style={{ fontSize: 11.5, marginTop: 2 }}>

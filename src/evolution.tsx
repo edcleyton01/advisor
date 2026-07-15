@@ -4,6 +4,7 @@ import {
   type Mentee, type Store, type PillarId,
 } from './data'
 import { AccessChip } from './week'
+import { Avatar } from './avatar'
 
 // ============================================================
 //  Minha evolução — a trajetória do mentorado no programa
@@ -106,7 +107,7 @@ export function MyEvolution({ m, store, onLogout }: { m: Mentee; store: Store; o
         <div className="topbar-right">
           <AccessChip m={m} />
           <span className="chip">{m.cycle}</span>
-          <div className="avatar" style={{ width: 34, height: 34, fontSize: 12 }}>{m.initials}</div>
+          <Avatar m={m} size={34} fontSize={12} />
           <button className="btn ghost" style={{ padding: '7px 12px', fontSize: 12 }} onClick={onLogout}>Trocar perfil</button>
         </div>
       </div>

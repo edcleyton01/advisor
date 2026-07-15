@@ -5,6 +5,7 @@ import {
   type Mentee, type Store, type Api, type Action, type ActionBlock, type CheckIn,
 } from './data'
 import { Attachments } from './attachments'
+import { Avatar } from './avatar'
 import { NextCallCard } from './agenda'
 
 const uid = () => Math.random().toString(36).slice(2, 10)
@@ -149,7 +150,7 @@ export function MyWeek({ m, store, api, onLogout }: { m: Mentee; store: Store; a
         <div className="topbar-right">
           <AccessChip m={m} />
           <span className="chip">{doneCount}/{items.length} ações · {Math.round(prog.pct * 100)}%</span>
-          <div className="avatar" style={{ width: 34, height: 34, fontSize: 12 }}>{m.initials}</div>
+          <Avatar m={m} size={34} fontSize={12} />
           <button className="btn ghost" style={{ padding: '7px 12px', fontSize: 12 }} onClick={onLogout}>Trocar perfil</button>
         </div>
       </div>
@@ -259,7 +260,7 @@ export function RankingCard({ store, highlightId }: { store: Store; highlightId?
         return (
           <div key={r.m.id} className={`rank-row ${r.m.id === highlightId ? 'me' : ''}`}>
             <span className="rank-pos mono">{i + 1}º <span style={{ color: 'var(--accent)' }}>{medal(i)}</span></span>
-            <div className="avatar" style={{ width: 32, height: 32, fontSize: 11 }}>{r.m.initials}</div>
+            <Avatar m={r.m} size={32} fontSize={11} />
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{r.m.name.split(' ')[0]}{r.m.id === highlightId ? ' (você)' : ''}</div>
               <div className="muted-3" style={{ fontSize: 11 }}>Nv {lv.current.n} · {lv.current.name} · ⟳{r.streak}</div>

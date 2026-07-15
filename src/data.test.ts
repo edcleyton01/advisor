@@ -3,7 +3,7 @@ import {
   PILLARS, LEVELS, QUIZ, PLAYBOOKS,
   levelForXp, actionXp, overallProgress, quizScores,
   campaignCalc, salesSummary, monthActuals, funnelCalc,
-  checkinStreak, spentXp, accessInfo, upcomingCalls, addDaysIso,
+  checkinStreak, spentXp, accessInfo, socialUrl, upcomingCalls, addDaysIso,
   weekKey, shiftWeek, todayIso,
   type Mentee, type ActionBlock, type Action, type CheckIn,
   type SaleEntry, type Campaign, type Redemption, type RewardItem, type ScheduledCall,
@@ -246,6 +246,18 @@ describe('addDaysIso', () => {
     expect(addDaysIso('2026-07-31', 1)).toBe('2026-08-01')
     expect(addDaysIso('2026-12-31', 1)).toBe('2027-01-01')
     expect(addDaysIso('2026-03-01', -1)).toBe('2026-02-28')
+  })
+})
+
+// ---------- socialUrl ----------
+describe('socialUrl', () => {
+  it('monta a URL a partir do @handle', () => {
+    expect(socialUrl('instagram', '@ana.lemos')).toBe('https://instagram.com/ana.lemos')
+    expect(socialUrl('tiktok', 'analemos')).toBe('https://tiktok.com/@analemos')
+    expect(socialUrl('linkedin', 'ana-beatriz')).toBe('https://linkedin.com/in/ana-beatriz')
+  })
+  it('URL completa passa intocada', () => {
+    expect(socialUrl('youtube', 'https://youtube.com/@canal')).toBe('https://youtube.com/@canal')
   })
 })
 
