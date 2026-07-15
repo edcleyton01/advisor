@@ -120,6 +120,34 @@ export interface CycleSnapshot {
   scores: Record<PillarId, { baseline: number; current: number }>
 }
 
+// ============================================================
+//  Checkpoints — histórico interno de acompanhamento (SÓ EQUIPE)
+//  Nunca viaja no payload do mentorado: vive em mentees_private.
+// ============================================================
+
+export type CheckpointKind = 'scheduled' | 'done' | 'rescheduled' | 'canceled' | 'note'
+
+export const CHECKPOINT_KINDS: { id: CheckpointKind; label: string; icon: string; tone: 'good' | 'warn' | 'bad' | '' }[] = [
+  { id: 'scheduled',   label: 'Agendado',   icon: '◷', tone: '' },
+  { id: 'done',        label: 'Realizado',  icon: '✓', tone: 'good' },
+  { id: 'rescheduled', label: 'Reagendado', icon: '↷', tone: 'warn' },
+  { id: 'canceled',    label: 'Cancelado',  icon: '✕', tone: 'bad' },
+  { id: 'note',        label: 'Observação', icon: '✎', tone: '' },
+]
+export const checkpointKind = (k: CheckpointKind) => CHECKPOINT_KINDS.find(x => x.id === k)!
+
+export interface CheckpointFile { id: string; path: string; name: string; size: number }
+
+export interface Checkpoint {
+  id: string
+  date: string          // data do evento (ISO)
+  kind: CheckpointKind
+  text: string
+  author?: string       // quem registrou
+  files?: CheckpointFile[]
+  createdAt: string     // quando foi registrado (ISO)
+}
+
 export interface SocialLinks { instagram?: string; youtube?: string; linkedin?: string; tiktok?: string }
 
 // Redes suportadas no cadastro: aceita @handle ou URL completa
@@ -160,6 +188,7 @@ export interface Mentee {
   sessions: Session[]
   cycleHistory?: CycleSnapshot[]
   privateNotes?: string // visível apenas para advisor/equipe
+  checkpoints?: Checkpoint[] // histórico interno de acompanhamento — SÓ EQUIPE (vive em mentees_private)
   onboardedAt?: string  // quando o mentorado concluiu o diagnóstico de onboarding
   accessUntil?: string  // até quando o mentorado tem acesso ao programa (ISO)
 }
@@ -265,6 +294,11 @@ export const MENTEES: Mentee[] = [
     email: 'ana@lemosconsultoria.com.br',
     phone: '(11) 98765-4321',
     socials: { instagram: '@analemos.consultoria', linkedin: 'ana-beatriz-lemos', youtube: '@analemos' },
+    checkpoints: [
+      { id: 'cp3', date: d('2026-07-08'), kind: 'done', text: 'Checkpoint realizado. Ana trouxe os números do funil de cases; definimos os 3 estudos prioritários.', author: 'Marina', createdAt: d('2026-07-08') },
+      { id: 'cp2', date: d('2026-07-08'), kind: 'rescheduled', text: 'Ana pediu remarcação (viagem a SP). Reagendado de 01/07 → 08/07, mesma pauta.', author: 'Julia', createdAt: d('2026-06-30') },
+      { id: 'cp1', date: d('2026-07-01'), kind: 'scheduled', text: 'Checkpoint de meio de ciclo agendado. Pauta: revisão do funil de cases + metas de julho.', author: 'Julia', createdAt: d('2026-06-25') },
+    ],
     business: 'Lemos Consultoria · Estratégia Comercial',
     niche: 'Consultoria high ticket para PMEs',
     revenue: 'R$ 85k/mês',
@@ -780,6 +814,8 @@ export interface Api {
   setNotes: (menteeId: string, text: string) => void
   upCall: (c: ScheduledCall) => void
   delCall: (id: string) => void
+  upCheckpoint: (menteeId: string, cp: Checkpoint) => void
+  delCheckpoint: (menteeId: string, cpId: string) => void
 }
 
 // ============================================================

@@ -19,6 +19,21 @@ export async function uploadEvidence(menteeId: string, actionId: string, file: F
   return { path }
 }
 
+// Anexo de checkpoint (SÓ EQUIPE): o caminho começa em "_checkpoints/",
+// que não é pasta de nenhum mentorado — a RLS do bucket só deixa staff
+// (is_staff) ler/escrever fora da própria pasta, então o mentorado
+// nunca enxerga estes arquivos.
+export async function uploadCheckpointFile(menteeId: string, file: File): Promise<{ path?: string; error?: string }> {
+  if (!supabase) return { error: 'Nuvem não configurada.' }
+  if (file.size > MAX) return { error: 'Arquivo acima de 8 MB.' }
+  const safe = file.name.replace(/[^\w.\-]+/g, '_').slice(-60)
+  const rnd = (crypto as any).randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)
+  const path = `_checkpoints/${menteeId}/${rnd}-${safe}`
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false })
+  if (error) return { error: error.message }
+  return { path }
+}
+
 // URL temporária (10 min) para abrir/baixar o arquivo
 export async function evidenceUrl(path: string): Promise<string | null> {
   if (!supabase) return null

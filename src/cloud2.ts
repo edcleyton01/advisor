@@ -82,7 +82,7 @@ function assembleStore(rows: MenteeRow[], shared: SharedData | null): Store {
 // (as notas privadas vivem em mentees_private, visível só para staff)
 function sliceFor(store: Store, m: Mentee, opts?: { stripStaff?: boolean }): MenteeSlice {
   const mine = <T extends { menteeId: string }>(arr: T[]) => arr.filter(x => x.menteeId === m.id)
-  const mentee = opts?.stripStaff ? { ...m, privateNotes: undefined } : m
+  const mentee = opts?.stripStaff ? { ...m, privateNotes: undefined, checkpoints: undefined } : m
   return {
     mentee,
     sales: mine(store.sales),
@@ -121,8 +121,12 @@ export async function loadForStaff(): Promise<Store | null> {
   try {
     const { data: priv, error: pErr } = await supabase.from('mentees_private').select('id, data')
     if (!pErr && priv) {
-      const notes = new Map(priv.map(r => [r.id as string, (r.data?.privateNotes as string) ?? '']))
-      store.mentees = store.mentees.map(m => notes.has(m.id) ? { ...m, privateNotes: notes.get(m.id) || undefined } : m)
+      const byId = new Map(priv.map(r => [r.id as string, r.data ?? {}]))
+      store.mentees = store.mentees.map(m => {
+        const pd = byId.get(m.id)
+        if (!pd) return m
+        return { ...m, privateNotes: (pd.privateNotes as string) || undefined, checkpoints: (pd.checkpoints as Mentee['checkpoints']) ?? undefined }
+      })
     }
   } catch { /* tabela ausente → segue sem merge */ }
   return store
@@ -150,7 +154,7 @@ export async function saveForStaff(store: Store): Promise<{ error?: string }> {
   // Notas privadas primeiro (tabela só-staff). Se a gravação funcionar,
   // as notas SAEM do blob que o mentorado lê; se falhar (SQL da Fase 3
   // ainda não aplicado), mantém o comportamento antigo — nunca perde nota.
-  const privRows = store.mentees.map(m => ({ id: m.id, data: { privateNotes: m.privateNotes ?? '' }, updated_at: now }))
+  const privRows = store.mentees.map(m => ({ id: m.id, data: { privateNotes: m.privateNotes ?? '', checkpoints: m.checkpoints ?? [] }, updated_at: now }))
   let stripStaff = false
   try {
     const { error: pErr } = await supabase.from('mentees_private').upsert(privRows)
@@ -171,7 +175,9 @@ export async function saveForMentee(store: Store, menteeId: string): Promise<{ e
   if (!supabase) return {}
   const m = store.mentees.find(x => x.id === menteeId)
   if (!m) return {}
-  const { error } = await supabase.from('mentees').upsert({ id: m.id, data: sliceFor(store, m), updated_at: new Date().toISOString() })
+  // stripStaff também aqui (defesa em profundidade): o mentorado nunca
+  // recebe campos staff, mas se recebesse, não voltariam pro blob legível.
+  const { error } = await supabase.from('mentees').upsert({ id: m.id, data: sliceFor(store, m, { stripStaff: true }), updated_at: new Date().toISOString() })
   if (error) { console.error('[cloud] saveForMentee:', error.message); return { error: error.message } }
   return {}
 }

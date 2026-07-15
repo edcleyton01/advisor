@@ -40,16 +40,27 @@ describe('saveForStaff — contrato de erro', () => {
 })
 
 describe('saveForStaff — notas privadas fora do payload do mentorado', () => {
-  const storeWithNotes = () => ensureStoreShape({ mentees: [{ id: 'm1', name: 'A', blocks: [], privateNotes: 'segredo do advisor' }] })
+  const cp = { id: 'cp1', date: '2026-07-15', kind: 'scheduled', text: 'interno', createdAt: '2026-07-15' }
+  const storeWithNotes = () => ensureStoreShape({ mentees: [{ id: 'm1', name: 'A', blocks: [], privateNotes: 'segredo do advisor', checkpoints: [cp] }] })
   // ordem das chamadas: [0] mentees_private, [1] mentees, [2] shared
 
-  it('com a tabela privada disponível, privateNotes sai do blob e vai para mentees_private', async () => {
+  it('com a tabela privada disponível, privateNotes E checkpoints saem do blob e vão para mentees_private', async () => {
     upsertMock.mockResolvedValue({ error: null })
     await saveForStaff(storeWithNotes())
     const privRows = upsertMock.mock.calls[0][0]
     const menteeRows = upsertMock.mock.calls[1][0]
     expect(privRows[0].data.privateNotes).toBe('segredo do advisor')
+    expect(privRows[0].data.checkpoints).toEqual([cp])
     expect(menteeRows[0].data.mentee.privateNotes).toBeUndefined()
+    expect(menteeRows[0].data.mentee.checkpoints).toBeUndefined()
+  })
+
+  it('saveForMentee nunca devolve campos staff pro blob legível (defesa em profundidade)', async () => {
+    upsertMock.mockResolvedValue({ error: null })
+    await saveForMentee(storeWithNotes(), 'm1')
+    const row = upsertMock.mock.calls[0][0]
+    expect(row.data.mentee.privateNotes).toBeUndefined()
+    expect(row.data.mentee.checkpoints).toBeUndefined()
   })
 
   it('sem a tabela privada (SQL da Fase 3 não aplicado), mantém a nota no blob — nunca perde', async () => {

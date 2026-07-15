@@ -15,6 +15,7 @@ import { AgendaView, NextCallCard } from './agenda'
 import { MyResults } from './results'
 import { MyEvolution } from './evolution'
 import { Avatar } from './avatar'
+import { CheckpointsSection } from './checkpoints'
 import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commercial'
 import { MyWeek, RewardsSection, RankingCard, AccessChip } from './week'
 import { FunnelCalculatorView, FunnelBoard } from './funnel'
@@ -413,6 +414,12 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
     })),
     upCall: c => setStore(s => ({ ...s, calls: upsert(s.calls, c) })),
     delCall: id => setStore(s => ({ ...s, calls: s.calls.filter(c => c.id !== id) })),
+    upCheckpoint: (menteeId, cp) => setStore(s => ({
+      ...s, mentees: s.mentees.map(m => m.id !== menteeId ? m : { ...m, checkpoints: upsert(m.checkpoints ?? [], cp) }),
+    })),
+    delCheckpoint: (menteeId, cpId) => setStore(s => ({
+      ...s, mentees: s.mentees.map(m => m.id !== menteeId ? m : { ...m, checkpoints: (m.checkpoints ?? []).filter(c => c.id !== cpId) }),
+    })),
   }
 
   // Seleção de perfil do mentorado
@@ -511,7 +518,7 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
         {role === 'advisor' && view === 'mentees' && <MenteesList store={store} api={api} onOpen={openMentee} />}
         {role === 'advisor' && view === 'detail' && (
           current
-            ? <Detail m={current} store={store} api={api} onBack={() => setView('mentees')} cloudMode={!!cloudEmail && !lockedMentee} />
+            ? <Detail m={current} store={store} api={api} onBack={() => setView('mentees')} cloudMode={!!cloudEmail && !lockedMentee} author={cloudEmail ? cloudEmail.split('@')[0] : ADVISOR.name.split(' ')[0]} />
             : <MenteesList store={store} api={api} onOpen={openMentee} />
         )}
         {role === 'advisor' && view === 'sales' && <SalesView store={store} api={api} />}
@@ -786,7 +793,7 @@ function SessionItem({ s, store }: { s: Session; store: Store }) {
 }
 
 // ---------- Advisor: Detail ----------
-function Detail({ m, store, api, onBack, cloudMode }: { m: Mentee; store: Store; api: Api; onBack: () => void; cloudMode?: boolean }) {
+function Detail({ m, store, api, onBack, cloudMode, author }: { m: Mentee; store: Store; api: Api; onBack: () => void; cloudMode?: boolean; author: string }) {
   const xp = actionXp(m)
   const lv = levelForXp(xp)
   const prog = overallProgress(m)
@@ -922,6 +929,8 @@ function Detail({ m, store, api, onBack, cloudMode }: { m: Mentee; store: Store;
             <NotesCard m={m} api={api} />
           </div>
         </div>
+
+        <CheckpointsSection m={m} api={api} author={author} />
 
         <div className="section">
           <div className="section-head">
