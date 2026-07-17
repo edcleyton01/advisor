@@ -11,7 +11,7 @@
   --line-2:    rgba(255,255,255,0.14);
   --text:      #f5f5f7;
   --text-2:    #a1a1a8;
-  --text-3:    #6c6c74;
+  --text-3:    #82828c;
   --accent:    #e8b34a;      /* âmbar — conquista / XP */
   --accent-dim:rgba(232,179,74,0.14);
   --good:      #4ec98a;
@@ -337,7 +337,7 @@ img.avatar-photo { object-fit: cover; display: block; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 @media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
 .field { display: flex; flex-direction: column; gap: 6px; }
-.field > span { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-3); font-weight: 600; }
+.field > span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-3); font-weight: 600; }
 .span2 { grid-column: 1 / -1; }
 .form-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 
@@ -414,7 +414,7 @@ tr:hover .row-tools, .camp:hover .row-tools { opacity: 1; }
   cursor: pointer; border-radius: 10px; padding: 6px 4px 8px; transition: background 0.15s;
 }
 .bar-col:hover, .bar-col.sel { background: var(--surface-2); }
-.bar-val { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); height: 14px; }
+.bar-val { font-family: var(--mono); font-size: 11px; color: var(--text-3); height: 14px; }
 .bar-area { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; position: relative; }
 
 /* marca de meta do mês no gráfico de receita (Meus resultados) */
@@ -537,7 +537,7 @@ tr:hover .row-tools, .camp:hover .row-tools { opacity: 1; }
 .rhythm { display: flex; align-items: flex-end; gap: 6px; height: 60px; }
 .rh-col { flex: 1; display: flex; align-items: flex-end; height: 100%; }
 .rh-bar { width: 100%; border-radius: 4px 4px 2px 2px; background: linear-gradient(180deg, var(--accent), #c8902f); transition: height 0.5s cubic-bezier(0.22,1,0.36,1); }
-.mini-axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); font-family: var(--mono); margin-top: 7px; }
+.mini-axis { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-3); font-family: var(--mono); margin-top: 7px; }
 
 .mini-bars { display: flex; align-items: flex-end; gap: 4px; height: 56px; }
 .mini-col { flex: 1; display: flex; align-items: flex-end; height: 100%; }
@@ -837,7 +837,7 @@ tr:hover .row-tools, .camp:hover .row-tools { opacity: 1; }
   }
   .tab-item {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-    color: var(--text-3); font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
+    color: var(--text-3); font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em;
     padding: 6px 0 4px; border-radius: 10px; position: relative; transition: color 0.15s;
   }
   .tab-item .tab-ic { font-size: 17px; line-height: 1.1; }
@@ -879,3 +879,15 @@ tr:hover .row-tools, .camp:hover .row-tools { opacity: 1; }
   78%  { opacity: 1; transform: translateY(-6px); }
   100% { opacity: 0; transform: translateY(-24px); }
 }
+
+/* ============================================================
+   Skeletons — carregamento com a forma do conteúdo
+   ============================================================ */
+.skeleton {
+  background: linear-gradient(100deg, var(--surface) 40%, var(--surface-2) 50%, var(--surface) 60%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }

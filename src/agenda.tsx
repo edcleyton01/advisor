@@ -6,6 +6,7 @@ import {
 } from './data'
 import { Avatar } from './avatar'
 import { loadGoogleEvents, type GEvent } from './gcal'
+import { cloudEnabled } from './supabase'
 
 // quem conduz a call (mesma semântica do histórico de sessions)
 const callWho = (store: Store, withId?: string) =>
@@ -123,12 +124,14 @@ function MonthCalendar({ month, calls, gevents, store, api }: { month: string; c
 // ---------- View do advisor ----------
 export function AgendaView({ store, api, onOpenMentee }: { store: Store; api: Api; onOpenMentee: (id: string) => void }) {
   const [month, setMonth] = useState(CURRENT_MONTH)
-  const [gevents, setGevents] = useState<GEvent[]>([])
+  const [gevents, setGevents] = useState<GEvent[] | null>(cloudEnabled ? null : []) // null = carregando
   useEffect(() => { loadGoogleEvents(setGevents) }, []) // cache instantâneo + atualização em background
+  const gLoading = gevents === null
+  const gList = gevents ?? []
   const inMonth = store.calls.filter(c => c.date.startsWith(month) && c.status !== 'canceled')
-  const gInMonth = gevents.filter(e => e.date.startsWith(month))
+  const gInMonth = gList.filter(e => e.date.startsWith(month))
   const upcoming = upcomingCalls(store.calls)
-  const gUpcoming = gevents.filter(e => e.date >= todayIso())
+  const gUpcoming = gList.filter(e => e.date >= todayIso())
   const doneCount = store.calls.filter(c => c.date.startsWith(month) && c.status === 'done').length
   // lista mesclada por data/hora: calls do app + eventos do Google
   const merged: ({ kind: 'call'; c: (typeof upcoming)[number] } | { kind: 'g'; e: GEvent })[] = [
@@ -170,14 +173,16 @@ export function AgendaView({ store, api, onOpenMentee }: { store: Store; api: Ap
         <div className="section">
           <div className="section-head">
             <div className="h2">Próximas calls</div>
-            {gevents.length > 0 && <span className="muted-3" style={{ fontSize: 12 }}><Ic n="calendar" size={11} /> {gUpcoming.length} do Google Agenda</span>}
+            {gList.length > 0 && <span className="muted-3" style={{ fontSize: 12 }}><Ic n="calendar" size={11} /> {gUpcoming.length} do Google Agenda</span>}
           </div>
           <div className="card" style={{ padding: 10 }}>
-            {merged.length
-              ? merged.slice(0, 30).map(it => it.kind === 'call'
-                  ? <CallRow key={it.c.id} c={it.c} store={store} api={api} onOpenMentee={onOpenMentee} />
-                  : <GoogleRow key={it.e.id} e={it.e} />)
-              : <div className="empty">Nenhuma call agendada. Agende a primeira.</div>}
+            {gLoading && !merged.length
+              ? [0, 1, 2].map(i => <div key={i} className="skeleton" style={{ height: 58, margin: 6, opacity: 1 - i * 0.25 }} />)
+              : merged.length
+                ? merged.slice(0, 30).map(it => it.kind === 'call'
+                    ? <CallRow key={it.c.id} c={it.c} store={store} api={api} onOpenMentee={onOpenMentee} />
+                    : <GoogleRow key={it.e.id} e={it.e} />)
+                : <div className="empty">Nenhuma call agendada. Agende a primeira.</div>}
           </div>
         </div>
       </div>

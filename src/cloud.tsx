@@ -30,13 +30,37 @@ function Shell({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Spinner({ label }: { label: string }) {
+// Esqueleto com a forma do app: percepção de velocidade muito melhor
+// que um spinner em tela cheia (o conteúdo "já está chegando").
+function SkeletonShell() {
+  const Card = ({ h = 96 }: { h?: number }) => <div className="skeleton" style={{ height: h, borderRadius: 16 }} />
   return (
-    <Shell>
-      <div className="display" style={{ fontSize: 22, marginTop: 18, textAlign: 'center' }}>ADVISOR OS</div>
-      <div className="cloud-spinner" />
-      <div className="muted" style={{ textAlign: 'center', fontSize: 13 }}>{label}</div>
-    </Shell>
+    <div className="app" aria-busy="true">
+      <aside className="sidebar">
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div className="skeleton" style={{ width: 30, height: 30, borderRadius: 8 }} />
+          <div className="skeleton" style={{ width: 110, height: 14 }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 28 }}>
+          {Array.from({ length: 8 }, (_, i) => (
+            <div key={i} className="skeleton" style={{ height: 30, opacity: Math.max(0.25, 1 - i * 0.11) }} />
+          ))}
+        </div>
+      </aside>
+      <main className="main">
+        <div className="topbar"><div className="skeleton" style={{ width: 150, height: 16 }} /></div>
+        <div className="content">
+          <div className="skeleton" style={{ width: 130, height: 11 }} />
+          <div className="skeleton" style={{ width: 'min(340px, 70%)', height: 30, marginTop: 14 }} />
+          <div className="grid g-4" style={{ marginTop: 26 }}>
+            {[0, 1, 2, 3].map(i => <Card key={i} />)}
+          </div>
+          <div className="grid g-2" style={{ marginTop: 16 }}>
+            <Card h={230} /><Card h={230} />
+          </div>
+        </div>
+      </main>
+    </div>
   )
 }
 
@@ -240,7 +264,7 @@ export default function CloudRoot() {
       </Shell>
     )
   }
-  if (session === undefined) return <Spinner label="Conectando…" />
+  if (session === undefined) return <SkeletonShell />
   if (session === null) return <LoginScreen />
   if (loadError) {
     return (
@@ -265,7 +289,7 @@ export default function CloudRoot() {
       </Shell>
     )
   }
-  if (identity === undefined || !store) return <Spinner label="Carregando seus dados…" />
+  if (identity === undefined || !store) return <SkeletonShell />
 
   return (
     <>
