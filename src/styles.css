@@ -790,3 +790,63 @@ tr:hover .row-tools, .camp:hover .row-tools { opacity: 1; }
   .report-bar { display: none; }
   .report-sheet { border-radius: 0; padding: 10mm 6mm; max-width: none; }
 }
+
+/* ============================================================
+   Mobile (≤760px) — experiência de app nativo no celular
+   ============================================================ */
+.tabbar { display: none; }
+.more-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.more-item {
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  padding: 13px 14px; border-radius: 12px; font-size: 13.5px; font-weight: 600;
+  background: var(--surface-2); border: 1px solid var(--line);
+}
+.more-item.on { color: var(--accent); border-color: var(--accent-dim); background: var(--accent-dim); }
+.more-item .mi-ic { font-size: 16px; width: 20px; text-align: center; opacity: 0.8; }
+
+@media (max-width: 760px) {
+  .sidebar { display: none; }
+  .content { padding: 20px 16px calc(92px + env(safe-area-inset-bottom)); }
+  .topbar { height: 56px; padding: 0 16px; }
+  .topbar-right { gap: 8px; }
+  .topbar-right .chip:not(.access-chip) { display: none; } /* no celular, só o essencial */
+
+  /* dedo não é cursor: alvos maiores */
+  .icon-btn { width: 38px; height: 38px; font-size: 15px; }
+  .btn { padding: 12px 18px; }
+  .row-tools { opacity: 1; } /* sem hover no touch — ferramentas sempre visíveis */
+
+  /* modais viram bottom-sheet */
+  .overlay { place-items: end stretch; padding: 0; }
+  .modal {
+    width: 100%; max-width: 100%; max-height: 92dvh;
+    border-radius: 20px 20px 0 0; border-left: none; border-right: none; border-bottom: none;
+    padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+    animation: sheetUp 0.3s cubic-bezier(0.22,1,0.36,1) both;
+  }
+
+  /* gráficos respiram menos */
+  .bars { gap: 5px; height: 165px; }
+
+  /* barra de abas inferior */
+  .tabbar {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: rgba(12,12,14,0.88); backdrop-filter: saturate(160%) blur(18px);
+    border-top: 1px solid var(--line);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  .tab-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    color: var(--text-3); font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
+    padding: 6px 0 4px; border-radius: 10px; position: relative; transition: color 0.15s;
+  }
+  .tab-item .tab-ic { font-size: 17px; line-height: 1.1; }
+  .tab-item.on { color: var(--accent); }
+  .tab-item .tab-badge {
+    position: absolute; top: 1px; left: calc(50% + 6px);
+    min-width: 15px; height: 15px; padding: 0 4px; border-radius: 999px;
+    background: #e5484d; color: #fff; font-size: 9px; font-weight: 700;
+    display: grid; place-items: center; font-family: var(--mono);
+  }
+}
+@keyframes sheetUp { from { transform: translateY(40px); opacity: 0.4; } }

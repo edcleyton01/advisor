@@ -262,6 +262,75 @@ function MenteeCard({ m, store, onOpen }: { m: Mentee; store: Store; onOpen: () 
   )
 }
 
+// ---------- Barra de abas (mobile) ----------
+interface TabDef { v: View; ic: string; l: string }
+
+function MobileTabbar({ role, view, setView, alertBadge, admin, moreOpen, setMoreOpen, cloudEmail, onSignOut, canSwitchRole, onSwitchRole }: {
+  role: Role; view: View; setView: (v: View) => void; alertBadge: number; admin: boolean
+  moreOpen: boolean; setMoreOpen: (v: boolean) => void
+  cloudEmail?: string; onSignOut?: () => void
+  canSwitchRole: boolean; onSwitchRole: (r: Role) => void
+}) {
+  const main: TabDef[] = role === 'advisor'
+    ? [{ v: 'overview', ic: '◐', l: 'Visão' }, { v: 'alerts', ic: '◎', l: 'Alertas' }, { v: 'agenda', ic: '◷', l: 'Agenda' }, { v: 'mentees', ic: '▤', l: 'Mentorados' }]
+    : [{ v: 'week', ic: '▦', l: 'Semana' }, { v: 'journey', ic: '◆', l: 'Jornada' }, { v: 'results', ic: '◧', l: 'Resultados' }, { v: 'myevolution', ic: '◔', l: 'Evolução' }]
+  const more: TabDef[] = role === 'advisor'
+    ? [
+        { v: 'evolution', ic: '◔', l: 'Evolução' }, { v: 'sales', ic: '◧', l: 'Comercial' },
+        { v: 'campaigns', ic: '◨', l: 'Campanhas' }, { v: 'funnelboard', ic: '▽', l: 'Funil' },
+        { v: 'playbooks', ic: '⚏', l: 'Playbooks' }, { v: 'rewards', ic: '◇', l: 'Recompensas' },
+        { v: 'team', ic: '◈', l: 'Equipe' }, ...(admin ? [{ v: 'admin' as View, ic: '⚙', l: 'Administração' }] : []),
+      ]
+    : [{ v: 'funnel', ic: '▽', l: 'Calculadora de funil' }, { v: 'quiz', ic: '✎', l: 'Diagnóstico' }]
+  const isActive = (t: TabDef) => view === t.v || (t.v === 'mentees' && view === 'detail')
+  const moreActive = more.some(t => t.v === view)
+  const go = (v: View) => { setView(v); setMoreOpen(false) }
+  return (
+    <>
+      <nav className="tabbar">
+        {main.map(t => (
+          <button key={t.v} className={`tab-item ${isActive(t) ? 'on' : ''}`} onClick={() => go(t.v)}>
+            <span className="tab-ic">{t.ic}</span>{t.l}
+            {t.v === 'alerts' && alertBadge > 0 && <span className="tab-badge">{alertBadge}</span>}
+          </button>
+        ))}
+        <button className={`tab-item ${moreActive || moreOpen ? 'on' : ''}`} onClick={() => setMoreOpen(!moreOpen)}>
+          <span className="tab-ic">⋯</span>Mais
+        </button>
+      </nav>
+      {moreOpen && (
+        <div className="overlay" style={{ zIndex: 55 }} onClick={e => e.target === e.currentTarget && setMoreOpen(false)}>
+          <div className="modal" style={{ padding: 18 }}>
+            <div className="modal-head" style={{ marginBottom: 14 }}>
+              <div className="h2">Mais</div>
+              <button className="icon-btn" onClick={() => setMoreOpen(false)}>✕</button>
+            </div>
+            <div className="more-grid">
+              {more.map(t => (
+                <button key={t.v} className={`more-item ${view === t.v ? 'on' : ''}`} onClick={() => go(t.v)}>
+                  <span className="mi-ic">{t.ic}</span>{t.l}
+                </button>
+              ))}
+            </div>
+            {(canSwitchRole || cloudEmail) && <div className="divider" style={{ margin: '16px 0' }} />}
+            {canSwitchRole && (
+              <div className="role-toggle" style={{ marginBottom: cloudEmail ? 12 : 0 }}>
+                <button className={role === 'advisor' ? 'on' : ''} onClick={() => { onSwitchRole('advisor'); setMoreOpen(false) }}>Advisor</button>
+                <button className={role === 'mentee' ? 'on' : ''} onClick={() => { onSwitchRole('mentee'); setMoreOpen(false) }}>Mentorado</button>
+              </div>
+            )}
+            {cloudEmail && (
+              <button className="reset-link" style={{ width: '100%', textAlign: 'left' }} onClick={onSignOut}>
+                ⇥ sair da conta ({cloudEmail})
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // ---------- App ----------
 type Role = 'advisor' | 'mentee'
 type View = 'overview' | 'alerts' | 'agenda' | 'admin' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'results' | 'myevolution' | 'funnel' | 'funnelboard' | 'quiz' | 'rewards'
@@ -298,6 +367,7 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
   const [view, setView] = useState<View>('overview')
   const [selected, setSelected] = useState<string>('ana')
   const [modal, setModal] = useState<ModalState | null>(null)
+  const [moreOpen, setMoreOpen] = useState(false)
 
   // Estado controlado (nuvem) ou local (localStorage)
   const controlled = !!cSetStore
@@ -440,6 +510,7 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
   const switchRole = (r: Role) => {
     setRole(r)
     setView(r === 'advisor' ? 'overview' : 'week')
+    setMoreOpen(false) // troca de papel fecha a folha "Mais" (mobile)
   }
 
   const resetDemo = () => {
@@ -589,6 +660,14 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
             : <LoginView mentees={store.mentees} onLogin={login} />
         )}
       </main>
+
+      {!(role === 'mentee' && !menteeSelf) && (
+        <MobileTabbar role={role} view={view} setView={setView}
+          alertBadge={settings.notifications.badge ? alertCount : 0} admin={admin}
+          moreOpen={moreOpen} setMoreOpen={setMoreOpen}
+          cloudEmail={cloudEmail} onSignOut={onCloudSignOut}
+          canSwitchRole={!lockedMentee} onSwitchRole={switchRole} />
+      )}
 
       {modal?.kind === 'mentee' && (
         <MenteeForm initial={modal.mentee} categories={categoriesInUse(store.mentees)} onSave={api.upMentee} onClose={() => setModal(null)} />
