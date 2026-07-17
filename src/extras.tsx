@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Ic } from './icons'
 import {
   PILLARS, ADVISOR, DEAL_STAGES, pillarById, pcolor, fmtBRL, fmtDate, monthLabel, monthFull,
   CURRENT_MONTH, buildAgenda, insightsFor, computeBadges, actionXp, overallProgress, levelForXp,
@@ -56,7 +57,7 @@ export function PlaybooksView({ store, api }: { store: Store; api: Api }) {
                   ))}
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 14, alignItems: 'center' }}>
-                  <span className="reward" style={{ marginTop: 0, fontSize: 11 }}>🔒 {p.rewardLabel}</span>
+                  <span className="reward" style={{ marginTop: 0, fontSize: 11 }}><Ic n="lock" size={10} /> {p.rewardLabel}</span>
                   <span className="mono" style={{ fontSize: 11, color: 'var(--accent)', marginLeft: 'auto' }}>até {totalXp} XP</span>
                 </div>
               </div>
@@ -257,7 +258,7 @@ export function InsightsCard({ store, menteeId }: { store: Store; menteeId?: str
   return (
     <div className="card insights">
       <div className="section-head" style={{ marginBottom: 12 }}>
-        <div className="h2" style={{ fontSize: 16 }}>⚡ Copiloto</div>
+        <div className="h2" style={{ fontSize: 16 }}><Ic n="zap" size={14} /> Copiloto</div>
         <span className="tag">análise automática dos dados</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -331,7 +332,7 @@ export function CommentsModal({ store, api, menteeId, blockId, actionId, role, o
       <div className="modal">
         <div className="modal-head">
           <div>
-            <div className="h2" style={{ fontSize: 16 }}>💬 {action.title}</div>
+            <div className="h2" style={{ fontSize: 16 }}><Ic n="chat" size={14} /> {action.title}</div>
             <div className="muted-3" style={{ fontSize: 11.5, marginTop: 3 }}>{block.title} · prazo {fmtDate(action.due)}</div>
           </div>
           <button className="icon-btn" onClick={onClose}>✕</button>

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Ic } from './icons'
 import { ACCENTS, defaultSettings, type Api, type AppSettings, type Store } from './data'
 import { resizePhoto } from './avatar'
 
@@ -31,7 +32,7 @@ function ImagePicker({ label, hint, value, size, mime, fit = 'cover', onChange }
           : <div className="avatar" style={{ width: 52, height: 52, fontSize: 18 }}>—</div>}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="btn ghost" style={{ padding: '7px 14px', fontSize: 12 }}
-            onClick={() => inputRef.current?.click()}>⬆ {value ? 'Trocar' : 'Enviar'}</button>
+            onClick={() => inputRef.current?.click()}><Ic n="upload" size={12} /> {value ? 'Trocar' : 'Enviar'}</button>
           {value && (
             <button className="btn ghost" style={{ padding: '7px 14px', fontSize: 12 }} onClick={() => onChange(undefined)}>Remover</button>
           )}
@@ -67,7 +68,7 @@ export function AdminView({ store, api, adminEmail }: { store: Store; api: Api; 
     <>
       <div className="topbar"><h1>Administração</h1>
         <div className="topbar-right">
-          <span className="chip">🔑 {adminEmail ?? 'acesso do advisor'}</span>
+          <span className="chip"><Ic n="key" size={11} /> {adminEmail ?? 'acesso do advisor'}</span>
         </div>
       </div>
       <div className="content page-enter">

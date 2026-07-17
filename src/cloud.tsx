@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
+import { Ic } from './icons'
 import type { Session } from '@supabase/supabase-js'
 import App from './App'
 import { supabase, cloudInitError, cloudHost, loadCloudStore, saveCloudStore, signInWithPassword, signOut } from './supabase'
 
 const HostTag = () => cloudHost
-  ? <div style={{ marginTop: 20, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--text-3)' }}>🔗 {cloudHost}</div>
+  ? <div style={{ marginTop: 20, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--text-3)' }}>⌁ {cloudHost}</div>
   : null
 import { seedStore, migrateStore, ensureStoreShape, defaultSettings, type Store } from './data'
 import {
@@ -279,7 +280,7 @@ export default function CloudRoot() {
       />
       {stale && (
         <button className="rt-banner" onClick={() => refetch()}>
-          🔄 Outra pessoa atualizou os dados — clique para atualizar
+          <Ic n="refresh" size={12} /> Outra pessoa atualizou os dados — clique para atualizar
         </button>
       )}
       {saveState === 'saving' && <div className="save-badge">Salvando…</div>}

@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react'
+import { Ic } from './icons'
 import {
   PILLARS, FUNNELS, CAMPAIGN_STATUS, DEAL_STAGES, ADVISOR, campaignCalc, fmtBRL, CURRENT_MONTH,
   pillarById, pcolor, actionXp, overallProgress, levelForXp, SOCIAL_META,
@@ -94,7 +95,7 @@ export function MenteeForm({ initial, categories, onSave, onClose }: { initial?:
           <Avatar m={{ ...f, initials: initialsOf(f.name) }} size={56} fontSize={18} />
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <button type="button" className="btn ghost" style={{ padding: '7px 14px', fontSize: 12 }}
-              onClick={() => photoInput.current?.click()}>⬆ {f.photo ? 'Trocar foto' : 'Enviar foto'}</button>
+              onClick={() => photoInput.current?.click()}><Ic n="upload" size={12} /> {f.photo ? 'Trocar foto' : 'Enviar foto'}</button>
             {f.photo && (
               <button type="button" className="btn ghost" style={{ padding: '7px 14px', fontSize: 12 }}
                 onClick={() => set('photo', undefined)}>Remover</button>

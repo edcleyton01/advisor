@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Ic } from './icons'
 import {
   ADVISOR, CURRENT_MONTH, monthFull, shiftMonth, fmtDate, todayIso, upcomingCalls, gcalCallUrl,
   type Store, type Api, type ScheduledCall,
@@ -48,7 +49,7 @@ function CallRow({ c, store, api, onOpenMentee }: {
           onClick={() => window.open(gcalCallUrl(c, {
             title: `Mentoria · ${menteeFirst(store, c.menteeId)} — ${c.topic}`,
             details: `${who.label}: ${who.name} · ADVISOR OS`,
-          }), '_blank', 'noopener')}>📅</button>
+          }), '_blank', 'noopener')}><Ic n="calendar" size={15} /></button>
         <button className="btn ghost" style={{ padding: '6px 12px', fontSize: 12 }} title="Marcar como realizada e registrar a call"
           onClick={register}>✓ Registrar</button>
         <button className="icon-btn" title="Editar" onClick={() => api.open({ kind: 'call', call: c })}>✎</button>
@@ -68,7 +69,7 @@ function GoogleRow({ e }: { e: GEvent }) {
         <div className={`call-date ${isToday ? 'today' : ''}`}>{isToday ? 'hoje' : fmtDate(e.date)}</div>
         <div className="call-time mono">{e.time ?? 'dia todo'}</div>
       </div>
-      <div className="avatar" style={{ width: 34, height: 34, fontSize: 13, borderRadius: 10 }} title="Evento do Google Agenda">🗓</div>
+      <div className="avatar" style={{ width: 34, height: 34, borderRadius: 10 }} title="Evento do Google Agenda"><Ic n="calendar" size={15} /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="call-topic">{e.title}</div>
         <div className="muted-3" style={{ fontSize: 11.5, marginTop: 2 }}>Google Agenda · edite por lá</div>
@@ -169,7 +170,7 @@ export function AgendaView({ store, api, onOpenMentee }: { store: Store; api: Ap
         <div className="section">
           <div className="section-head">
             <div className="h2">Próximas calls</div>
-            {gevents.length > 0 && <span className="muted-3" style={{ fontSize: 12 }}>🗓 {gUpcoming.length} do Google Agenda</span>}
+            {gevents.length > 0 && <span className="muted-3" style={{ fontSize: 12 }}><Ic n="calendar" size={11} /> {gUpcoming.length} do Google Agenda</span>}
           </div>
           <div className="card" style={{ padding: 10 }}>
             {merged.length
@@ -212,7 +213,7 @@ export function NextCallCard({ store, menteeId }: { store: Store; menteeId: stri
       <div className="muted" style={{ marginTop: 8, fontSize: 13.5 }}>{next.topic}</div>
       <a className="btn ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 14, padding: '7px 14px', fontSize: 12 }}
         href={gcalCallUrl(next, { title: `Mentoria — ${next.topic}`, details: `${who.label}: ${who.name} · Programa ADVISOR` })}
-        target="_blank" rel="noopener noreferrer">📅 Adicionar à minha agenda</a>
+        target="_blank" rel="noopener noreferrer"><Ic n="calendar" size={13} /> Adicionar à minha agenda</a>
     </div>
   )
 }

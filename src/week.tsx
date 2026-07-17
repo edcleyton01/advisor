@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Ic } from './icons'
 import {
   activeBlocks, todayIso, weekKey, shiftWeek, effectiveStreak, actionXp, overallProgress,
   levelForXp, spentXp, pillarById, pcolor, fmtDate, accessInfo,
@@ -92,7 +93,7 @@ function WeekRow({ it, m, api, overdue }: { it: WeekItem; m: Mentee; api: Api; o
       <div className="action-meta">
         <button className="icon-btn" style={{ opacity: 1 }} title="Comentários"
           onClick={() => api.open({ kind: 'comments', menteeId: m.id, blockId: it.b.id, actionId: a.id })}>
-          💬{nComments ? <span className="c-count">{nComments}</span> : null}
+          <Ic n="chat" size={13} />{nComments ? <span className="c-count">{nComments}</span> : null}
         </button>
         <span className="due" style={overdue ? { color: '#f27979', fontWeight: 700 } : undefined}>{fmtDate(a.due)}</span>
         <span className="xp-chip">+{a.xp}</span>
@@ -127,7 +128,7 @@ export function AccessChip({ m }: { m: Mentee }) {
   return (
     <span className={`chip access-chip ${tone}`}
       title={a.expired ? `Acesso encerrado em ${fmtDate(a.endDate)}` : `Acesso ao programa até ${fmtDate(a.endDate)}`}>
-      ⌛ {a.expired ? 'acesso expirado' : `${a.daysLeft} ${a.daysLeft === 1 ? 'dia restante' : 'dias restantes'}`}
+      <Ic n="clock" size={11} /> {a.expired ? 'acesso expirado' : `${a.daysLeft} ${a.daysLeft === 1 ? 'dia restante' : 'dias restantes'}`}
     </span>
   )
 }

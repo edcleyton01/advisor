@@ -196,7 +196,7 @@ export function MyResults({ m, store, onLogout }: { m: Mentee; store: Store; onL
                       {Math.round(goalPct * 100)}<small>%</small>
                     </div>
                     <div style={{ marginTop: 8 }}><div className="bar good"><i style={{ width: `${goalPct * 100}%` }} /></div></div>
-                    <div className="stat-sub" style={{ marginTop: 7 }}>{goalPct >= 1 ? 'meta batida 🎉' : `faltam ${fmtBRL(goal!.revenueGoal - now.revenue)}`}</div>
+                    <div className="stat-sub" style={{ marginTop: 7 }}>{goalPct >= 1 ? 'meta batida ✦' : `faltam ${fmtBRL(goal!.revenueGoal - now.revenue)}`}</div>
                   </>
                 ) : (
                   <><div className="stat-value" style={{ fontSize: 24, color: 'var(--text-3)' }}>—</div>

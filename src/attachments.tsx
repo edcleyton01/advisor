@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Ic } from './icons'
 import { cloudEnabled } from './supabase'
 import { uploadEvidence, evidenceUrl, removeEvidence } from './storage'
 import type { Action, Api, Attachment } from './data'
@@ -46,7 +47,7 @@ export function Attachments({ menteeId, blockId, action, api, canEdit }: {
     <div className="attach">
       {atts.map(a => (
         <span key={a.id} className="attach-chip">
-          <button className="attach-open" onClick={() => open(a)} title={`${a.name} · ${fmtSize(a.size)}`}>📎 {short(a.name)}</button>
+          <button className="attach-open" onClick={() => open(a)} title={`${a.name} · ${fmtSize(a.size)}`}><Ic n="clip" size={11} /> {short(a.name)}</button>
           {canEdit && <button className="attach-del" title="Remover" onClick={() => del(a)}>✕</button>}
         </span>
       ))}

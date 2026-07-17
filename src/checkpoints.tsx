@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Ic } from './icons'
 import {
   CHECKPOINT_KINDS, checkpointKind, fmtDate, todayIso,
   type Api, type Checkpoint, type CheckpointFile, type CheckpointKind, type Mentee,
@@ -51,7 +52,7 @@ function CpFiles({ m, cp, api }: { m: Mentee; cp: Checkpoint; api: Api }) {
     <div className="attach" style={{ marginTop: 8 }}>
       {files.map(f => (
         <span key={f.id} className="attach-chip">
-          <button className="attach-open" onClick={() => open(f)} title={f.name}>📎 {short(f.name)}</button>
+          <button className="attach-open" onClick={() => open(f)} title={f.name}><Ic n="clip" size={11} /> {short(f.name)}</button>
           <button className="attach-del" title="Remover" onClick={() => del(f)}>✕</button>
         </span>
       ))}
@@ -89,7 +90,7 @@ export function CheckpointsSection({ m, api, author }: { m: Mentee; api: Api; au
       <div className="section-head">
         <div className="h2" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           Checkpoints
-          <span className="tag" style={{ fontSize: 10 }}>🔒 uso interno · o mentorado não vê</span>
+          <span className="tag" style={{ fontSize: 10 }}><Ic n="lock" size={10} /> uso interno · o mentorado não vê</span>
         </div>
         <span className="muted-3" style={{ fontSize: 12 }}>{items.length} registro{items.length === 1 ? '' : 's'}</span>
       </div>

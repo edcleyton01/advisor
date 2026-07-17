@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Ic } from './icons'
 import {
   PILLARS, ADVISOR, pillarById, levelForXp, actionXp, blockProgress, overallProgress, activeBlocks,
   pcolor, fmtDate, fmtBRL, todayIso, CURRENT_MONTH, monthFull, salesSummary, campaignCalc,
@@ -18,6 +19,7 @@ import { MyEvolution } from './evolution'
 import { Avatar } from './avatar'
 import { CheckpointsSection } from './checkpoints'
 import { AdminView } from './admin'
+import { celebrate, CelebrationLayer } from './celebrate'
 import { SalesView, CampaignsView, TeamView, MenteeCommercial } from './commercial'
 import { MyWeek, RewardsSection, RankingCard, AccessChip } from './week'
 import { FunnelCalculatorView, FunnelBoard } from './funnel'
@@ -124,7 +126,7 @@ function ActionBlockView({ block, onToggle, interactive, tools, onComment, mente
             {prog.done}/{prog.total}
           </div>
           <div className={`reward ${complete ? '' : 'locked'}`}>
-            {complete ? '✓' : '🔒'} +{block.rewardXp} XP
+            {complete ? '✓ ' : <Ic n="lock" size={10} style={{ marginRight: 4 }} />}+{block.rewardXp} XP
           </div>
         </div>
         {tools && (
@@ -160,7 +162,7 @@ function ActionBlockView({ block, onToggle, interactive, tools, onComment, mente
               )}
               {onComment && (
                 <button className="icon-btn" style={{ opacity: 1 }} title="Comentários" onClick={() => onComment(a)}>
-                  💬{a.comments?.length ? <span className="c-count">{a.comments.length}</span> : null}
+                  <Ic n="chat" size={13} />{a.comments?.length ? <span className="c-count">{a.comments.length}</span> : null}
                 </button>
               )}
               <span className="due">{fmtDate(a.due)}</span>
@@ -380,6 +382,26 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
     try { localStorage.setItem(STORE_KEY, JSON.stringify(localStore)) } catch { /* quota */ }
   }, [localStore, controlled])
 
+  // Celebração de aprovação: calcula o XP que ENTRA com esta mudança
+  // (inclui bônus se o bloco fechar) e anuncia bloco/nível quando for o caso.
+  const maybeCelebrateApproval = (menteeId: string, blockId: string, next: Action) => {
+    if (next.status !== 'done') return
+    const m = store.mentees.find(x => x.id === menteeId)
+    const cur = m?.blocks.find(b => b.id === blockId)?.actions.find(x => x.id === next.id)
+    if (!m || !cur || cur.status === 'done') return
+    const before = actionXp(m)
+    const m2: Mentee = {
+      ...m,
+      blocks: m.blocks.map(b => b.id !== blockId ? b : ({ ...b, actions: b.actions.map(x => x.id === next.id ? { ...x, status: 'done' as const } : x) })),
+    }
+    const after = actionXp(m2)
+    if (after > before) celebrate(`+${after - before} XP`)
+    const b2 = m2.blocks.find(b => b.id === blockId)!
+    if (b2.actions.length && b2.actions.every(x => x.status === 'done')) celebrate(`✦ Bloco concluído — ${b2.title}`, 'ok')
+    const la = levelForXp(after).current, lb = levelForXp(before).current
+    if (la.n > lb.n) celebrate(`Nível ${la.n} · ${la.name}!`, 'level')
+  }
+
   const api: Api = {
     open: setModal,
     upMentee: m => setStore(s => ({ ...s, mentees: upsert(s.mentees, m) })),
@@ -404,17 +426,27 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
     delBlock: (menteeId, blockId) => setStore(s => ({
       ...s, mentees: s.mentees.map(m => m.id !== menteeId ? m : { ...m, blocks: m.blocks.filter(b => b.id !== blockId) }),
     })),
-    upAction: (menteeId, blockId, a) => setStore(s => ({
+    upAction: (menteeId, blockId, a) => {
+      maybeCelebrateApproval(menteeId, blockId, a)
+      setStore(s => ({
       ...s, mentees: s.mentees.map(m => m.id !== menteeId ? m : {
         ...m, blocks: m.blocks.map(b => b.id !== blockId ? b : { ...b, actions: upsert(b.actions, a) }),
       }),
-    })),
+      }))
+    },
     delAction: (menteeId, blockId, actionId) => setStore(s => ({
       ...s, mentees: s.mentees.map(m => m.id !== menteeId ? m : {
         ...m, blocks: m.blocks.map(b => b.id !== blockId ? b : { ...b, actions: b.actions.filter(a => a.id !== actionId) }),
       }),
     })),
-    toggleAction: (menteeId, aId, mode) => setStore(s => ({
+    toggleAction: (menteeId, aId, mode) => {
+      if (mode === 'advisor') {
+        const m0 = store.mentees.find(x => x.id === menteeId)
+        const b0 = m0?.blocks.find(b => b.actions.some(x => x.id === aId))
+        const a0 = b0?.actions.find(x => x.id === aId)
+        if (m0 && b0 && a0 && cycleAdvisor(a0.status) === 'done') maybeCelebrateApproval(menteeId, b0.id, { ...a0, status: 'done' })
+      }
+      setStore(s => ({
       ...s, mentees: s.mentees.map(m => m.id !== menteeId ? m : {
         ...m,
         blocks: m.blocks.map(b => ({
@@ -424,7 +456,8 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
           }),
         })),
       }),
-    })),
+      }))
+    },
     addSession: (menteeId, sess) => setStore(s => ({
       ...s, mentees: s.mentees.map(m => m.id !== menteeId ? m : { ...m, sessions: [sess, ...m.sessions] }),
     })),
@@ -440,7 +473,10 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
     delFunnel: id => setStore(s => ({ ...s, funnels: s.funnels.filter(x => x.id !== id) })),
     upReward: r => setStore(s => ({ ...s, rewards: upsert(s.rewards, r) })),
     delReward: id => setStore(s => ({ ...s, rewards: s.rewards.filter(x => x.id !== id) })),
-    upCheckIn: c => setStore(s => ({ ...s, checkins: upsert(s.checkins, c) })),
+    upCheckIn: c => {
+      celebrate('⟳ Check-in enviado — ritmo mantido', 'ok')
+      setStore(s => ({ ...s, checkins: upsert(s.checkins, c) }))
+    },
     upPlaybook: p => setStore(s => ({ ...s, playbooks: upsert(s.playbooks, p) })),
     delPlaybook: id => setStore(s => ({ ...s, playbooks: s.playbooks.filter(p => p.id !== id) })),
     applyPlaybook: (menteeId, playbookId) => setStore(s => {
@@ -451,9 +487,12 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
     }),
     upDeal: d => setStore(s => ({ ...s, deals: upsert(s.deals, d) })),
     delDeal: id => setStore(s => ({ ...s, deals: s.deals.filter(d => d.id !== id) })),
-    redeem: (menteeId, rewardId) => setStore(s => ({
+    redeem: (menteeId, rewardId) => {
+      celebrate('◇ Recompensa resgatada — a equipe vai entregar', 'ok')
+      setStore(s => ({
       ...s, redemptions: [...s.redemptions, { id: uid(), menteeId, rewardId, date: todayIso(), status: 'pending' as const }],
-    })),
+      }))
+    },
     setRedemption: (id, status) => setStore(s => ({
       ...s, redemptions: s.redemptions.map(r => r.id === id ? { ...r, status } : r),
     })),
@@ -668,6 +707,8 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
           cloudEmail={cloudEmail} onSignOut={onCloudSignOut}
           canSwitchRole={!lockedMentee} onSwitchRole={switchRole} />
       )}
+
+      <CelebrationLayer />
 
       {modal?.kind === 'mentee' && (
         <MenteeForm initial={modal.mentee} categories={categoriesInUse(store.mentees)} onSave={api.upMentee} onClose={() => setModal(null)} />
@@ -963,7 +1004,7 @@ function Detail({ m, store, api, onBack, cloudMode, author }: { m: Mentee; store
               {(() => {
                 const a = accessInfo(m)
                 return a ? <span className={`tag ${a.expired ? 'warn' : 'good'}`} title={`Acesso até ${fmtDate(a.endDate)}`}>
-                  {a.expired ? '⌛ Acesso encerrado' : `⌛ ${a.daysLeft}d de acesso`}
+                  <Ic n="clock" size={11} /> {a.expired ? 'Acesso encerrado' : `${a.daysLeft}d de acesso`}
                 </span> : null
               })()}
               {squad.map(t => <span key={t.id} className="tag" title={t.role}>◈ {t.name.split(' ')[0]}</span>)}
@@ -971,7 +1012,7 @@ function Detail({ m, store, api, onBack, cloudMode, author }: { m: Mentee; store
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {cloudMode && (
-              <button className="btn" onClick={() => api.open({ kind: 'menteeLogin', menteeId: m.id, menteeName: m.name })}>🔑 Criar acesso</button>
+              <button className="btn" onClick={() => api.open({ kind: 'menteeLogin', menteeId: m.id, menteeName: m.name })}><Ic n="key" size={12} /> Criar acesso</button>
             )}
             <button className="btn ghost" onClick={() => api.open({ kind: 'report', menteeId: m.id })}>⎙ Relatório</button>
             <button className="btn ghost" onClick={() => api.open({ kind: 'cycle', menteeId: m.id })}>◼ Encerrar ciclo</button>
@@ -1036,7 +1077,7 @@ function Detail({ m, store, api, onBack, cloudMode, author }: { m: Mentee; store
           <div className="section-head">
             <div className="h2">Plano de ação</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn ghost" onClick={() => api.open({ kind: 'apply', menteeId: m.id })}>⚡ Aplicar playbook</button>
+              <button className="btn ghost" onClick={() => api.open({ kind: 'apply', menteeId: m.id })}><Ic n="zap" size={12} /> Aplicar playbook</button>
               <button className="btn ghost" onClick={() => api.open({ kind: 'block', menteeId: m.id })}>＋ Novo bloco</button>
             </div>
           </div>
