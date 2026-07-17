@@ -22,6 +22,11 @@ export const PILLARS: Pillar[] = [
 
 export const pillarById = (id: PillarId) => PILLARS.find(p => p.id === id)!
 
+// Programas/categorias em uso (distintos, ordenados) — alimenta o campo
+// com sugestões no cadastro, sem precisar de um cadastro separado.
+export const categoriesInUse = (mentees: { category?: string }[]): string[] =>
+  [...new Set(mentees.map(m => m.category?.trim()).filter((c): c is string => !!c))].sort()
+
 // ---------- Gamificação ----------
 
 export interface Level {
@@ -224,6 +229,7 @@ export interface Mentee {
   initials: string
   photo?: string    // foto de perfil (data URL, redimensionada no upload)
   jobTitle?: string // cargo na empresa
+  category?: string // programa ADVISOR ao qual pertence (ex.: Elevation)
   email?: string
   phone?: string
   socials?: SocialLinks
@@ -347,6 +353,7 @@ export const MENTEES: Mentee[] = [
     email: 'ana@lemosconsultoria.com.br',
     phone: '(11) 98765-4321',
     socials: { instagram: '@analemos.consultoria', linkedin: 'ana-beatriz-lemos', youtube: '@analemos' },
+    category: 'Elevation',
     checkpoints: [
       { id: 'cp3', date: d('2026-07-08'), kind: 'done', text: 'Checkpoint realizado. Ana trouxe os números do funil de cases; definimos os 3 estudos prioritários.', author: 'Marina', createdAt: d('2026-07-08') },
       { id: 'cp2', date: d('2026-07-08'), kind: 'rescheduled', text: 'Ana pediu remarcação (viagem a SP). Reagendado de 01/07 → 08/07, mesma pauta.', author: 'Julia', createdAt: d('2026-06-30') },
@@ -408,6 +415,7 @@ export const MENTEES: Mentee[] = [
   },
   {
     id: 'rafael',
+    category: 'Elevation',
     name: 'Rafael Nunes',
     initials: 'RN',
     business: 'Nunes Digital · Infoprodutos',
@@ -455,6 +463,7 @@ export const MENTEES: Mentee[] = [
   },
   {
     id: 'carol',
+    category: 'Advisor Start',
     name: 'Carolina Dias',
     initials: 'CD',
     business: 'Clínica Dias · Nutrologia',
@@ -493,6 +502,7 @@ export const MENTEES: Mentee[] = [
   },
   {
     id: 'bruno',
+    category: 'Advisor Start',
     name: 'Bruno Tavares',
     initials: 'BT',
     business: 'Tavares & Co · Agência de Marketing',

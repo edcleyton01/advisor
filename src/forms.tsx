@@ -71,7 +71,7 @@ function blankMentee(): Mentee {
   }
 }
 
-export function MenteeForm({ initial, onSave, onClose }: { initial?: Mentee; onSave: (m: Mentee) => void; onClose: () => void }) {
+export function MenteeForm({ initial, categories, onSave, onClose }: { initial?: Mentee; categories?: string[]; onSave: (m: Mentee) => void; onClose: () => void }) {
   const [f, setF] = useState<Mentee>(() => (initial ? structuredClone(initial) : blankMentee()))
   const [photoErr, setPhotoErr] = useState<string | null>(null)
   const photoInput = useRef<HTMLInputElement>(null)
@@ -81,7 +81,7 @@ export function MenteeForm({ initial, onSave, onClose }: { initial?: Mentee; onS
   const setScore = (id: PillarId, key: 'baseline' | 'current', v: number) =>
     setF(p => ({ ...p, scores: { ...p.scores, [id]: { ...p.scores[id], [key]: Math.max(0, Math.min(10, v)) } } }))
   const ok = f.name.trim().length > 1 && f.business.trim().length > 0
-  const save = () => { onSave({ ...f, initials: initialsOf(f.name) }); onClose() }
+  const save = () => { onSave({ ...f, initials: initialsOf(f.name), category: f.category?.trim() || undefined }); onClose() }
   const pickPhoto = async (file?: File) => {
     if (!file) return
     setPhotoErr(null)
@@ -140,6 +140,14 @@ export function MenteeForm({ initial, onSave, onClose }: { initial?: Mentee; onS
           <select className="in" value={f.stage} onChange={e => set('stage', e.target.value)}>
             <option>Início</option><option>Estruturando</option><option>Escalando</option>
           </select>
+        </Field>
+        <Field label="Programa / Categoria">
+          <input className="in" list="mentee-categories" value={f.category ?? ''}
+            placeholder={categories?.length ? `Ex.: ${categories[0]}` : 'Ex.: Elevation'}
+            onChange={e => set('category', e.target.value || undefined)} />
+          <datalist id="mentee-categories">
+            {categories?.map(c => <option key={c} value={c} />)}
+          </datalist>
         </Field>
         <Field label="Objetivo do ciclo" span2>
           <textarea className="in" rows={2} value={f.macroGoal} onChange={e => set('macroGoal', e.target.value)} />

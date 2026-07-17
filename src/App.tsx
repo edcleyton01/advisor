@@ -3,7 +3,7 @@ import {
   PILLARS, ADVISOR, pillarById, levelForXp, actionXp, blockProgress, overallProgress, activeBlocks,
   pcolor, fmtDate, fmtBRL, todayIso, CURRENT_MONTH, monthFull, salesSummary, campaignCalc,
   upsert, effectiveStreak, menteeHealth, blockFromPlaybook, seedStore, migrateStore, buildAlerts, accessInfo,
-  SOCIAL_META, socialUrl, ACCENTS, ensureSettings, alertFingerprint,
+  SOCIAL_META, socialUrl, ACCENTS, ensureSettings, alertFingerprint, categoriesInUse,
   type Mentee, type PillarId, type ActionStatus, type ActionBlock, type Action,
   type Store, type ModalState, type Api, type CycleSnapshot, type Session,
 } from './data'
@@ -204,6 +204,7 @@ function ProfileCard({ m, api }: { m: Mentee; api: Api }) {
           onClick={() => api.open({ kind: 'mentee', mentee: m })}>✎ Editar dados</button>
       </div>
       <dl className="profile-rows">
+        <dt>Programa</dt><dd>{m.category ? <span style={{ color: 'var(--accent)', fontWeight: 600 }}>◆ {m.category}</span> : na}</dd>
         <dt>Nome</dt><dd>{m.name}</dd>
         <dt>Empresa</dt><dd>{m.business}{m.jobTitle ? <span className="muted-3"> · {m.jobTitle}</span> : ''}</dd>
         <dt>Nicho</dt><dd>{m.niche || na}</dd>
@@ -239,7 +240,7 @@ function MenteeCard({ m, store, onOpen }: { m: Mentee; store: Store; onOpen: () 
         <Avatar m={m} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="mentee-name">{m.name}</div>
-          <div className="mentee-biz">{m.business}</div>
+          <div className="mentee-biz">{m.category && <span style={{ color: 'var(--accent)' }}>◆ {m.category} · </span>}{m.business}</div>
         </div>
         <span className={`tag ${health.status === 'ok' ? 'good' : 'warn'}`} style={riskStyle}
           title={health.reasons.join(' · ') || 'em dia'}>
@@ -590,7 +591,7 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
       </main>
 
       {modal?.kind === 'mentee' && (
-        <MenteeForm initial={modal.mentee} onSave={api.upMentee} onClose={() => setModal(null)} />
+        <MenteeForm initial={modal.mentee} categories={categoriesInUse(store.mentees)} onSave={api.upMentee} onClose={() => setModal(null)} />
       )}
       {modal?.kind === 'block' && (
         <BlockForm initial={modal.block} onSave={b => api.upBlock(modal.menteeId, b)} onClose={() => setModal(null)} />
@@ -777,6 +778,9 @@ function Overview({ store, onOpen }: { store: Store; onOpen: (id: string) => voi
 // ---------- Advisor: Mentees list ----------
 function MenteesList({ store, api, onOpen }: { store: Store; api: Api; onOpen: (id: string) => void }) {
   const { mentees } = store
+  const cats = categoriesInUse(mentees)
+  const [cat, setCat] = useState<string | 'all'>('all')
+  const shown = cat === 'all' ? mentees : mentees.filter(m => m.category?.trim() === cat)
   return (
     <>
       <div className="topbar"><h1>Mentorados</h1>
@@ -790,8 +794,19 @@ function MenteesList({ store, api, onOpen }: { store: Store; api: Api; onOpen: (
           </div>
           <button className="btn" onClick={() => api.open({ kind: 'mentee' })}>＋ Novo mentorado</button>
         </div>
-        <div className="mentee-grid stagger" style={{ marginTop: 26 }}>
-          {mentees.map(m => <MenteeCard key={m.id} m={m} store={store} onOpen={() => onOpen(m.id)} />)}
+        {cats.length > 0 && (
+          <div className="pill-tabs" style={{ marginTop: 22 }}>
+            <button className={`pill-tab ${cat === 'all' ? 'on' : ''}`} onClick={() => setCat('all')}>Todos ({mentees.length})</button>
+            {cats.map(c => (
+              <button key={c} className={`pill-tab ${cat === c ? 'on' : ''}`} onClick={() => setCat(c)}>
+                {c} ({mentees.filter(m => m.category?.trim() === c).length})
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="mentee-grid stagger" style={{ marginTop: cats.length ? 18 : 26 }}>
+          {shown.map(m => <MenteeCard key={m.id} m={m} store={store} onOpen={() => onOpen(m.id)} />)}
+          {!shown.length && <div className="empty">Nenhum mentorado neste programa.</div>}
         </div>
       </div>
     </>
@@ -858,6 +873,7 @@ function Detail({ m, store, api, onBack, cloudMode, author }: { m: Mentee; store
             <div className="display" style={{ fontSize: 25 }}>{m.name}</div>
             <div className="muted" style={{ marginTop: 4 }}>{m.business} · {m.niche}</div>
             <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              {m.category && <span className="tag" style={{ color: 'var(--accent)', borderColor: 'var(--accent-dim)', background: 'var(--accent-dim)' }}>◆ {m.category}</span>}
               <span className="tag">{m.stage}</span>
               <span className="tag">{m.revenue}</span>
               <span className="level-pill"><span className="lv">Nv {lv.current.n}</span>{lv.current.name}</span>
