@@ -12,6 +12,7 @@ import {
   PlaybookForm, ApplyPlaybookModal, DealForm, CycleCloseForm, MenteeLoginForm, RewardForm, CallForm,
 } from './forms'
 import { AgendaView, NextCallCard } from './agenda'
+import { prefetchGoogleEvents } from './gcal'
 import { MyResults } from './results'
 import { MyEvolution } from './evolution'
 import { Avatar } from './avatar'
@@ -461,6 +462,10 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
   const alertCount = alerts.filter(a => !readSet.has(alertFingerprint(a))).length
   const admin = !lockedMentee && (isAdmin ?? true) // local/demo: sempre; nuvem: só role advisor
   const settings = store.settings
+
+  // Aquecimento do feed do Google: busca já na abertura do app,
+  // para a Agenda (e o card de próxima call) pintarem sem espera.
+  useEffect(() => { prefetchGoogleEvents() }, [])
 
   // Branding e tema valem para o app inteiro (equipe e mentorados)
   useEffect(() => {

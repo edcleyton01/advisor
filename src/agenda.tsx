@@ -4,7 +4,7 @@ import {
   type Store, type Api, type ScheduledCall,
 } from './data'
 import { Avatar } from './avatar'
-import { fetchGoogleEvents, type GEvent } from './gcal'
+import { loadGoogleEvents, type GEvent } from './gcal'
 
 // quem conduz a call (mesma semântica do histórico de sessions)
 const callWho = (store: Store, withId?: string) =>
@@ -123,7 +123,7 @@ function MonthCalendar({ month, calls, gevents, store, api }: { month: string; c
 export function AgendaView({ store, api, onOpenMentee }: { store: Store; api: Api; onOpenMentee: (id: string) => void }) {
   const [month, setMonth] = useState(CURRENT_MONTH)
   const [gevents, setGevents] = useState<GEvent[]>([])
-  useEffect(() => { fetchGoogleEvents().then(setGevents) }, [])
+  useEffect(() => { loadGoogleEvents(setGevents) }, []) // cache instantâneo + atualização em background
   const inMonth = store.calls.filter(c => c.date.startsWith(month) && c.status !== 'canceled')
   const gInMonth = gevents.filter(e => e.date.startsWith(month))
   const upcoming = upcomingCalls(store.calls)
@@ -188,7 +188,7 @@ export function AgendaView({ store, api, onOpenMentee }: { store: Store; api: Ap
 export function NextCallCard({ store, menteeId }: { store: Store; menteeId: string }) {
   const [g, setG] = useState<GEvent | null>(null)
   useEffect(() => {
-    fetchGoogleEvents().then(evs => {
+    loadGoogleEvents(evs => {
       const next = evs.filter(e => e.date >= todayIso() && e.time).sort((a, b) => (a.date + a.time!).localeCompare(b.date + b.time!))[0]
       setG(next ?? null)
     })

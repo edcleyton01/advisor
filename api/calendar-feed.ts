@@ -11,7 +11,7 @@ import { createClient } from '@supabase/supabase-js'
 import { parseIcs, type GEvent } from '../src/ics.js'
 
 let cache: { at: number; events: GEvent[] } | null = null
-const TTL = 5 * 60 * 1000
+const TTL = 10 * 60 * 1000
 
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
@@ -28,18 +28,23 @@ export default async function handler(req: any, res: any) {
   const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '')
   if (!token) return res.status(401).json({ error: 'Sem autenticação.' })
 
+  // Download do ICS em PARALELO com a validação do login (era sequencial —
+  // metade do delay percebido). O texto só é usado se a auth passar.
+  const stale = !cache || Date.now() - cache.at > TTL
+  const icsPromise: Promise<string> | null = stale
+    ? fetch(icsUrl).then(r => (r.ok ? r.text() : Promise.reject(new Error(`ICS ${r.status}`))))
+    : null
+  icsPromise?.catch(() => {}) // evita unhandled rejection se a auth falhar antes
+
   const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } })
   const { data: caller, error: cErr } = await admin.auth.getUser(token)
   if (cErr || !caller?.user) return res.status(401).json({ error: 'Sessão inválida.' })
   const { data: prof } = await admin.from('profiles').select('role, mentee_id').eq('user_id', caller.user.id).maybeSingle()
   if (!prof) return res.status(403).json({ error: 'Sem perfil.' })
 
-  // busca + parse com cache (por instância)
-  if (!cache || Date.now() - cache.at > TTL) {
+  if (icsPromise) {
     try {
-      const r = await fetch(icsUrl)
-      if (!r.ok) throw new Error(`ICS ${r.status}`)
-      cache = { at: Date.now(), events: parseIcs(await r.text()) }
+      cache = { at: Date.now(), events: parseIcs(await icsPromise) }
     } catch (e: any) {
       console.error('[calendar-feed]', e?.message)
       if (!cache) return res.status(502).json({ error: 'Não foi possível ler a agenda do Google.' })
