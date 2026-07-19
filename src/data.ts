@@ -206,6 +206,28 @@ export interface Checkpoint {
   createdAt: string     // quando foi registrado (ISO)
 }
 
+// ============================================================
+//  Materiais complementares (PDF/RAR/ZIP) — equipe publica,
+//  mentorado baixa. Metadados no `shared`; arquivo no bucket
+//  'materials' (leitura: qualquer logado; escrita: só staff).
+// ============================================================
+
+export interface Material {
+  id: string
+  title: string
+  description?: string
+  category?: string   // programa alvo; vazio = todos os mentorados
+  fileName: string
+  path: string        // caminho no bucket 'materials'
+  size: number
+  uploadedAt: string  // ISO
+  author?: string
+}
+
+// o que um mentorado enxerga: materiais gerais + os do programa dele
+export const materialsVisibleTo = (materials: Material[], menteeCategory?: string): Material[] =>
+  materials.filter(mt => !mt.category?.trim() || mt.category.trim() === menteeCategory?.trim())
+
 export interface SocialLinks { instagram?: string; youtube?: string; linkedin?: string; tiktok?: string }
 
 // Redes suportadas no cadastro: aceita @handle ou URL completa
@@ -822,6 +844,7 @@ export interface Store {
   rewards: RewardItem[]
   calls: ScheduledCall[]
   settings: AppSettings
+  materials: Material[]
 }
 
 export type ModalState =
@@ -881,6 +904,8 @@ export interface Api {
   upCheckpoint: (menteeId: string, cp: Checkpoint) => void
   delCheckpoint: (menteeId: string, cpId: string) => void
   setSettings: (patch: Partial<AppSettings>) => void
+  upMaterial: (mt: Material) => void
+  delMaterial: (id: string) => void
 }
 
 // ============================================================
@@ -1409,7 +1434,7 @@ export function accessInfo(m: Mentee): AccessInfo | null {
 export const seedStore = (): Store => structuredClone({
   mentees: MENTEES, team: TEAM, sales: SALES, campaigns: CAMPAIGNS, goals: GOALS,
   checkins: CHECKINS, playbooks: PLAYBOOKS, redemptions: REDEMPTIONS, deals: DEALS,
-  funnels: FUNNEL_SNAPSHOTS, rewards: REWARD_CATALOG, calls: CALLS, settings: defaultSettings(),
+  funnels: FUNNEL_SNAPSHOTS, rewards: REWARD_CATALOG, calls: CALLS, settings: defaultSettings(), materials: [],
 })
 
 // Aplica migrações a um store salvo (localStorage ou nuvem) sem apagar edições.
@@ -1425,6 +1450,7 @@ export function migrateStore(s: any): Store | null {
   if (!s.rewards) s.rewards = structuredClone(REWARD_CATALOG)
   if (!s.calls) s.calls = []
   s.settings = ensureSettings(s.settings)
+  if (!s.materials) s.materials = []
   // novos templates da metodologia entram sem apagar edições existentes
   for (const p of PLAYBOOKS) {
     if (!s.playbooks.some((x: { id: string }) => x.id === p.id)) s.playbooks.push(structuredClone(p))
@@ -1451,5 +1477,6 @@ export function ensureStoreShape(s: any): Store {
     rewards: arr(s?.rewards),
     calls: arr(s?.calls),
     settings: ensureSettings(s?.settings),
+    materials: arr(s?.materials),
   }
 }

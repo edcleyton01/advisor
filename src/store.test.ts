@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ensureStoreShape, ensureSettings, migrateStore, seedStore, buildAlerts, todayIso, PLAYBOOKS } from './data'
+import { ensureStoreShape, ensureSettings, migrateStore, seedStore, buildAlerts, todayIso, PLAYBOOKS, materialsVisibleTo, type Material } from './data'
 
 const KEYS = ['mentees', 'team', 'sales', 'campaigns', 'goals', 'checkins', 'playbooks', 'redemptions', 'deals', 'funnels', 'rewards', 'calls'] as const
 
@@ -51,6 +51,18 @@ describe('settings (Administração)', () => {
     expect(on.some(a => a.kind === 'call')).toBe(true)
     expect(off.some(a => a.kind === 'call')).toBe(false)
     expect(off.some(a => a.kind === 'checkin')).toBe(false)
+  })
+})
+
+describe('materialsVisibleTo', () => {
+  const mt = (p: Partial<Material>): Material => ({ id: 'x', title: 't', fileName: 'a.pdf', path: 'p', size: 1, uploadedAt: '2026-07-17', ...p })
+  it('mentorado vê os gerais + os do programa dele, e nada de outros programas', () => {
+    const materials = [mt({ id: 'geral' }), mt({ id: 'elev', category: 'Elevation' }), mt({ id: 'start', category: 'Advisor Start' })]
+    expect(materialsVisibleTo(materials, 'Elevation').map(m => m.id)).toEqual(['geral', 'elev'])
+    expect(materialsVisibleTo(materials, undefined).map(m => m.id)).toEqual(['geral'])
+  })
+  it('categoria com espaços/vazia conta como geral', () => {
+    expect(materialsVisibleTo([mt({ id: 'a', category: '  ' })], 'Elevation').map(m => m.id)).toEqual(['a'])
   })
 })
 

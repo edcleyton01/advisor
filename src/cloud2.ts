@@ -9,7 +9,7 @@ import {
   ensureStoreShape,
   type Store, type Mentee, type TeamMember, type Playbook, type SaleEntry, type Campaign,
   type MonthlyGoal, type CheckIn, type Redemption, type Deal, type FunnelSnapshot, type RewardItem,
-  type ScheduledCall, type AppSettings,
+  type ScheduledCall, type AppSettings, type Material,
 } from './data'
 
 export type Role = 'advisor' | 'team' | 'mentee'
@@ -35,7 +35,7 @@ interface MenteeSlice {
   calls?: ScheduledCall[] // opcional: linhas antigas não têm
 }
 interface MenteeRow { id: string; data: MenteeSlice }
-interface SharedData { team: TeamMember[]; playbooks: Playbook[]; rewards: RewardItem[]; settings?: AppSettings }
+interface SharedData { team: TeamMember[]; playbooks: Playbook[]; rewards: RewardItem[]; settings?: AppSettings; materials?: Material[] }
 
 const STAFF: Role[] = ['advisor', 'team']
 export const isStaff = (r: Role) => STAFF.includes(r)
@@ -68,6 +68,7 @@ function assembleStore(rows: MenteeRow[], shared: SharedData | null): Store {
     playbooks: shared?.playbooks ?? [],
     rewards: shared?.rewards ?? [],
     settings: shared?.settings,
+    materials: shared?.materials ?? [],
     sales: pick(s => s.sales),
     campaigns: pick(s => s.campaigns),
     goals: pick(s => s.goals),
@@ -97,7 +98,7 @@ function sliceFor(store: Store, m: Mentee, opts?: { stripStaff?: boolean }): Men
   }
 }
 
-const sharedFrom = (store: Store): SharedData => ({ team: store.team, playbooks: store.playbooks, rewards: store.rewards, settings: store.settings })
+const sharedFrom = (store: Store): SharedData => ({ team: store.team, playbooks: store.playbooks, rewards: store.rewards, settings: store.settings, materials: store.materials })
 
 // ---------- Load ----------
 

@@ -27,6 +27,11 @@ const PATHS: Record<string, React.ReactNode> = {
   zap: <path d="M13 2.5L4.5 13.5H11l-1.5 8L18.5 10H12z" strokeLinejoin="round" />,
   refresh: <path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1M20.5 3.5v5h-5" />,
   upload: <path d="M12 16V4.5M12 4.5L7 9.5M12 4.5l5 5M4.5 20h15" />,
+  file: <>
+    <path d="M6 3h8l5 5v13a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 21V4.5A1.5 1.5 0 0 1 6.5 3z" transform="translate(0.5 -0.5)" />
+    <path d="M14 3v5h5" transform="translate(0.5 -0.5)" />
+  </>,
+  download: <path d="M12 4v11M12 15l-4.5-4.5M12 15l4.5-4.5M4.5 20h15" />,
   spark: <path d="M12 3.5l1.9 5.6 5.6 1.9-5.6 1.9L12 18.5l-1.9-5.6L4.5 11l5.6-1.9z" strokeLinejoin="round" />,
 }
 

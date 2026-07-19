@@ -15,6 +15,7 @@ import {
 import { AgendaView, NextCallCard } from './agenda'
 import { prefetchGoogleEvents } from './gcal'
 import { MyResults } from './results'
+import { MaterialsAdminView, MyMaterials } from './materials'
 import { MyEvolution } from './evolution'
 import { Avatar } from './avatar'
 import { CheckpointsSection } from './checkpoints'
@@ -280,10 +281,10 @@ function MobileTabbar({ role, view, setView, alertBadge, admin, moreOpen, setMor
     ? [
         { v: 'evolution', ic: '◔', l: 'Evolução' }, { v: 'sales', ic: '◧', l: 'Comercial' },
         { v: 'campaigns', ic: '◨', l: 'Campanhas' }, { v: 'funnelboard', ic: '▽', l: 'Funil' },
-        { v: 'playbooks', ic: '⚏', l: 'Playbooks' }, { v: 'rewards', ic: '◇', l: 'Recompensas' },
+        { v: 'playbooks', ic: '⚏', l: 'Playbooks' }, { v: 'materials', ic: '▣', l: 'Materiais' }, { v: 'rewards', ic: '◇', l: 'Recompensas' },
         { v: 'team', ic: '◈', l: 'Equipe' }, ...(admin ? [{ v: 'admin' as View, ic: '⚙', l: 'Administração' }] : []),
       ]
-    : [{ v: 'funnel', ic: '▽', l: 'Calculadora de funil' }, { v: 'quiz', ic: '✎', l: 'Diagnóstico' }]
+    : [{ v: 'mymaterials', ic: '▣', l: 'Materiais' }, { v: 'funnel', ic: '▽', l: 'Calculadora de funil' }, { v: 'quiz', ic: '✎', l: 'Diagnóstico' }]
   const isActive = (t: TabDef) => view === t.v || (t.v === 'mentees' && view === 'detail')
   const moreActive = more.some(t => t.v === view)
   const go = (v: View) => { setView(v); setMoreOpen(false) }
@@ -335,7 +336,7 @@ function MobileTabbar({ role, view, setView, alertBadge, admin, moreOpen, setMor
 
 // ---------- App ----------
 type Role = 'advisor' | 'mentee'
-type View = 'overview' | 'alerts' | 'agenda' | 'admin' | 'evolution' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'results' | 'myevolution' | 'funnel' | 'funnelboard' | 'quiz' | 'rewards'
+type View = 'overview' | 'alerts' | 'agenda' | 'admin' | 'evolution' | 'materials' | 'mymaterials' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'results' | 'myevolution' | 'funnel' | 'funnelboard' | 'quiz' | 'rewards'
 
 const NAV: { id: View; label: string }[] = [
   { id: 'overview', label: 'Visão geral' },
@@ -347,6 +348,7 @@ const NAV: { id: View; label: string }[] = [
   { id: 'campaigns', label: 'Campanhas' },
   { id: 'funnelboard', label: 'Funil' },
   { id: 'playbooks', label: 'Playbooks' },
+  { id: 'materials', label: 'Materiais' },
   { id: 'rewards', label: 'Recompensas' },
   { id: 'team', label: 'Equipe' },
 ]
@@ -534,6 +536,8 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
       ...s, mentees: s.mentees.map(m => m.id !== menteeId ? m : { ...m, checkpoints: (m.checkpoints ?? []).filter(c => c.id !== cpId) }),
     })),
     setSettings: patch => setStore(s => ({ ...s, settings: ensureSettings({ ...s.settings, ...patch }) })),
+    upMaterial: mt => setStore(s => ({ ...s, materials: upsert(s.materials, mt) })),
+    delMaterial: id => setStore(s => ({ ...s, materials: s.materials.filter(x => x.id !== id) })),
   }
 
   // Seleção de perfil do mentorado
@@ -634,6 +638,9 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
               <button className={`nav-item ${view === 'myevolution' ? 'active' : ''}`} onClick={() => setView('myevolution')}>
                 <span className="dot" /> Minha evolução
               </button>
+              <button className={`nav-item ${view === 'mymaterials' ? 'active' : ''}`} onClick={() => setView('mymaterials')}>
+                <span className="dot" /> Materiais
+              </button>
               <button className={`nav-item ${view === 'funnel' ? 'active' : ''}`} onClick={() => setView('funnel')}>
                 <span className="dot" /> Calculadora de funil
               </button>
@@ -670,6 +677,7 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
         {role === 'advisor' && view === 'alerts' && <AlertsView store={store} onOpenMentee={openMentee} readSet={readSet} onReadAll={() => markAlertsRead(alerts.map(alertFingerprint))} />}
         {role === 'advisor' && view === 'agenda' && <AgendaView store={store} api={api} onOpenMentee={openMentee} />}
         {role === 'advisor' && view === 'admin' && admin && <AdminView store={store} api={api} adminEmail={cloudEmail} />}
+        {role === 'advisor' && view === 'materials' && <MaterialsAdminView store={store} api={api} author={cloudEmail ? cloudEmail.split('@')[0] : ADVISOR.name.split(' ')[0]} />}
         {role === 'advisor' && view === 'mentees' && <MenteesList store={store} api={api} onOpen={openMentee} />}
         {role === 'advisor' && view === 'detail' && (
           current
@@ -691,6 +699,8 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
                 ? <MyResults m={menteeSelf} store={store} onLogout={menteeLogout} />
               : view === 'myevolution'
                 ? <MyEvolution m={menteeSelf} store={store} onLogout={menteeLogout} />
+              : view === 'mymaterials'
+                ? <MyMaterials m={menteeSelf} store={store} onLogout={menteeLogout} />
               : view === 'funnel'
                 ? <FunnelCalculatorView m={menteeSelf} store={store} api={api} onLogout={menteeLogout} />
                 : view === 'quiz'
