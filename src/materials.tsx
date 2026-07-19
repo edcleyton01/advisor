@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import {
-  categoriesInUse, materialsVisibleTo, fmtDate,
+  categoriesInUse, materialsVisibleTo, materialTags, fmtDate,
   type Api, type Material, type Mentee, type Store,
 } from './data'
 import { cloudEnabled } from './supabase'
@@ -17,7 +17,7 @@ import { Ic } from './icons'
 const uid = () => Math.random().toString(36).slice(2, 10)
 const fmtSize = (b: number) => (b < 1024 * 1024 ? `${Math.round(b / 1024)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`)
 const extOf = (name: string) => name.split('.').pop()?.toUpperCase() ?? 'ARQ'
-const ALLOWED = /\.(pdf|rar|zip)$/i
+const ALLOWED = /\.(pdf|rar|zip|png|jpe?g)$/i
 
 // ---------- Linha de material ----------
 function MaterialRow({ mt, canManage, onDelete }: { mt: Material; canManage: boolean; onDelete: () => void }) {
@@ -34,6 +34,7 @@ function MaterialRow({ mt, canManage, onDelete }: { mt: Material; canManage: boo
         <div style={{ fontWeight: 650, fontSize: 14 }}>{mt.title}</div>
         {mt.description && <div className="muted" style={{ fontSize: 12.5, marginTop: 3, lineHeight: 1.45 }}>{mt.description}</div>}
         <div className="muted-3" style={{ fontSize: 11, marginTop: 5 }}>
+          {mt.tag?.trim() && <span className="tag" style={{ fontSize: 9.5, marginRight: 6, padding: '2px 8px' }}>{mt.tag}</span>}
           {mt.category?.trim()
             ? <span style={{ color: 'var(--accent)' }}>◆ {mt.category} · </span>
             : <span>todos os programas · </span>}
@@ -60,6 +61,7 @@ function UploadCard({ store, api, author }: { store: Store; api: Api; author: st
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
+  const [tag, setTag] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -69,9 +71,9 @@ function UploadCard({ store, api, author }: { store: Store; api: Api; author: st
   const pick = (f?: File) => {
     setErr(null)
     if (!f) return
-    if (!ALLOWED.test(f.name)) { setErr('Formato não suportado — envie .pdf, .rar ou .zip.'); return }
+    if (!ALLOWED.test(f.name)) { setErr('Formato não suportado — envie .pdf, .rar, .zip, .png ou .jpg.'); return }
     setFile(f)
-    if (!title.trim()) setTitle(f.name.replace(/\.(pdf|rar|zip)$/i, '').replace(/[_-]+/g, ' '))
+    if (!title.trim()) setTitle(f.name.replace(/\.(pdf|rar|zip|png|jpe?g)$/i, '').replace(/[_-]+/g, ' '))
   }
 
   const publish = async () => {
@@ -82,10 +84,10 @@ function UploadCard({ store, api, author }: { store: Store; api: Api; author: st
     if (error || !path) { setErr(error || 'Falha no upload.'); return }
     api.upMaterial({
       id: uid(), title: title.trim(), description: description.trim() || undefined,
-      category: category.trim() || undefined, fileName: file.name, path, size: file.size,
+      category: category.trim() || undefined, tag: tag.trim() || undefined, fileName: file.name, path, size: file.size,
       uploadedAt: new Date().toISOString().slice(0, 10), author,
     })
-    setTitle(''); setDescription(''); setCategory(''); setFile(null)
+    setTitle(''); setDescription(''); setCategory(''); setTag(''); setFile(null)
   }
 
   if (!cloudEnabled) {
@@ -101,14 +103,18 @@ function UploadCard({ store, api, author }: { store: Store; api: Api; author: st
           <input className="in" list="material-categories" value={category} onChange={e => setCategory(e.target.value)} placeholder="Todos os mentorados" />
           <datalist id="material-categories">{cats.map(c => <option key={c} value={c} />)}</datalist>
         </label>
-        <label className="field span2"><span>Descrição (opcional)</span>
+        <label className="field"><span>Tag / Tipo (opcional)</span>
+          <input className="in" list="material-tags" value={tag} maxLength={30} onChange={e => setTag(e.target.value)} placeholder="Ex.: Planilha, Aula, Template" />
+          <datalist id="material-tags">{materialTags(store.materials).map(t => <option key={t} value={t} />)}</datalist>
+        </label>
+        <label className="field"><span>Descrição (opcional)</span>
           <input className="in" value={description} maxLength={160} onChange={e => setDescription(e.target.value)} placeholder="Pra que serve, quando usar…" />
         </label>
         <div className="span2" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <button className="btn ghost" onClick={() => inputRef.current?.click()}>
-            <Ic n="clip" size={12} /> {file ? file.name : 'Escolher arquivo (.pdf, .rar, .zip · até 50MB)'}
+            <Ic n="clip" size={12} /> {file ? file.name : 'Escolher arquivo (.pdf, .rar, .zip, .png, .jpg · até 50MB)'}
           </button>
-          <input ref={inputRef} type="file" accept=".pdf,.rar,.zip,application/pdf" style={{ display: 'none' }}
+          <input ref={inputRef} type="file" accept=".pdf,.rar,.zip,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" style={{ display: 'none' }}
             onChange={e => { pick(e.target.files?.[0]); e.target.value = '' }} />
           <button className="btn" disabled={!ok || busy} onClick={publish}>
             {busy ? 'Enviando…' : 'Publicar material'}
@@ -123,8 +129,12 @@ function UploadCard({ store, api, author }: { store: Store; api: Api; author: st
 // ---------- View do advisor/equipe ----------
 export function MaterialsAdminView({ store, api, author }: { store: Store; api: Api; author: string }) {
   const cats = ['all', ...new Set(store.materials.map(m => m.category?.trim()).filter((c): c is string => !!c))]
+  const tags = materialTags(store.materials)
   const [cat, setCat] = useState('all')
-  const shown = cat === 'all' ? store.materials : store.materials.filter(m => m.category?.trim() === cat)
+  const [tag, setTag] = useState('all')
+  const shown = store.materials
+    .filter(m => cat === 'all' || m.category?.trim() === cat)
+    .filter(m => tag === 'all' || m.tag?.trim() === tag)
   const del = (mt: Material) => { removeMaterialFile(mt.path); api.delMaterial(mt.id) }
   return (
     <>
@@ -141,11 +151,21 @@ export function MaterialsAdminView({ store, api, author }: { store: Store; api: 
         <div className="section">
           <UploadCard store={store} api={api} author={author} />
           {cats.length > 2 && (
-            <div className="pill-tabs" style={{ marginBottom: 14 }}>
+            <div className="pill-tabs" style={{ marginBottom: tags.length ? 8 : 14 }}>
+              <span className="muted-3" style={{ fontSize: 11, alignSelf: 'center', marginRight: 2 }}>Programa:</span>
               {cats.map(c => (
                 <button key={c} className={`pill-tab ${cat === c ? 'on' : ''}`} onClick={() => setCat(c)}>
                   {c === 'all' ? 'Todos' : c}
                 </button>
+              ))}
+            </div>
+          )}
+          {tags.length > 0 && (
+            <div className="pill-tabs" style={{ marginBottom: 14 }}>
+              <span className="muted-3" style={{ fontSize: 11, alignSelf: 'center', marginRight: 2 }}>Tipo:</span>
+              <button className={`pill-tab ${tag === 'all' ? 'on' : ''}`} onClick={() => setTag('all')}>Todos</button>
+              {tags.map(t => (
+                <button key={t} className={`pill-tab ${tag === t ? 'on' : ''}`} onClick={() => setTag(t)}>{t}</button>
               ))}
             </div>
           )}
@@ -162,7 +182,10 @@ export function MaterialsAdminView({ store, api, author }: { store: Store; api: 
 
 // ---------- View do mentorado ----------
 export function MyMaterials({ m, store, onLogout }: { m: Mentee; store: Store; onLogout: () => void }) {
-  const mine = materialsVisibleTo(store.materials, m.category)
+  const all = materialsVisibleTo(store.materials, m.category)
+  const tags = materialTags(all)
+  const [tag, setTag] = useState('all')
+  const mine = tag === 'all' ? all : all.filter(mt => mt.tag?.trim() === tag)
   return (
     <>
       <div className="topbar"><h1>Materiais</h1>
@@ -176,6 +199,16 @@ export function MyMaterials({ m, store, onLogout }: { m: Mentee; store: Store; o
         <div className="eyebrow">Biblioteca do programa</div>
         <div className="display" style={{ marginTop: 8, fontSize: 26 }}>Seus materiais complementares</div>
         <div className="section">
+          {tags.length > 0 && (
+            <div className="pill-tabs" style={{ marginBottom: 14 }}>
+              <button className={`pill-tab ${tag === 'all' ? 'on' : ''}`} onClick={() => setTag('all')}>Todos ({all.length})</button>
+              {tags.map(t => (
+                <button key={t} className={`pill-tab ${tag === t ? 'on' : ''}`} onClick={() => setTag(t)}>
+                  {t} ({all.filter(x => x.tag?.trim() === t).length})
+                </button>
+              ))}
+            </div>
+          )}
           <div className="card" style={{ padding: mine.length ? 10 : undefined }}>
             {mine.length
               ? mine.map(mt => <MaterialRow key={mt.id} mt={mt} canManage={false} onDelete={() => {}} />)

@@ -217,12 +217,17 @@ export interface Material {
   title: string
   description?: string
   category?: string   // programa alvo; vazio = todos os mentorados
+  tag?: string        // tipo do material (Planilha, Aula, Template…) — livre
   fileName: string
   path: string        // caminho no bucket 'materials'
   size: number
   uploadedAt: string  // ISO
   author?: string
 }
+
+// tags/tipos em uso (distintos, ordenados) — alimenta sugestões e filtros
+export const materialTags = (materials: Material[]): string[] =>
+  [...new Set(materials.map(mt => mt.tag?.trim()).filter((t): t is string => !!t))].sort()
 
 // o que um mentorado enxerga: materiais gerais + os do programa dele
 export const materialsVisibleTo = (materials: Material[], menteeCategory?: string): Material[] =>
