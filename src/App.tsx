@@ -275,16 +275,16 @@ function MobileTabbar({ role, view, setView, alertBadge, admin, moreOpen, setMor
   canSwitchRole: boolean; onSwitchRole: (r: Role) => void
 }) {
   const main: TabDef[] = role === 'advisor'
-    ? [{ v: 'overview', ic: '◐', l: 'Visão' }, { v: 'alerts', ic: '◎', l: 'Alertas' }, { v: 'agenda', ic: '◷', l: 'Agenda' }, { v: 'mentees', ic: '▤', l: 'Mentorados' }]
-    : [{ v: 'week', ic: '▦', l: 'Semana' }, { v: 'journey', ic: '◆', l: 'Jornada' }, { v: 'results', ic: '◧', l: 'Resultados' }, { v: 'myevolution', ic: '◔', l: 'Evolução' }]
+    ? [{ v: 'overview', ic: 'grid', l: 'Visão' }, { v: 'alerts', ic: 'bell', l: 'Alertas' }, { v: 'agenda', ic: 'calendar', l: 'Agenda' }, { v: 'mentees', ic: 'users', l: 'Mentorados' }]
+    : [{ v: 'week', ic: 'tasks', l: 'Semana' }, { v: 'journey', ic: 'compass', l: 'Jornada' }, { v: 'results', ic: 'bars', l: 'Resultados' }, { v: 'myevolution', ic: 'trend', l: 'Evolução' }]
   const more: TabDef[] = role === 'advisor'
     ? [
-        { v: 'evolution', ic: '◔', l: 'Evolução' }, { v: 'sales', ic: '◧', l: 'Comercial' },
-        { v: 'campaigns', ic: '◨', l: 'Campanhas' }, { v: 'funnelboard', ic: '▽', l: 'Funil' },
-        { v: 'playbooks', ic: '⚏', l: 'Playbooks' }, { v: 'materials', ic: '▣', l: 'Materiais' }, { v: 'rewards', ic: '◇', l: 'Recompensas' },
-        { v: 'team', ic: '◈', l: 'Equipe' }, ...(admin ? [{ v: 'admin' as View, ic: '⚙', l: 'Administração' }] : []),
+        { v: 'evolution', ic: 'trend', l: 'Evolução' }, { v: 'sales', ic: 'bars', l: 'Comercial' },
+        { v: 'campaigns', ic: 'megaphone', l: 'Campanhas' }, { v: 'funnelboard', ic: 'funnel', l: 'Funil' },
+        { v: 'playbooks', ic: 'book', l: 'Playbooks' }, { v: 'materials', ic: 'file', l: 'Materiais' }, { v: 'rewards', ic: 'gift', l: 'Recompensas' },
+        { v: 'team', ic: 'shield', l: 'Equipe' }, ...(admin ? [{ v: 'admin' as View, ic: 'gear', l: 'Administração' }] : []),
       ]
-    : [{ v: 'mymaterials', ic: '▣', l: 'Materiais' }, { v: 'funnel', ic: '▽', l: 'Calculadora de funil' }, { v: 'quiz', ic: '✎', l: 'Diagnóstico' }]
+    : [{ v: 'mymaterials', ic: 'file', l: 'Materiais' }, { v: 'funnel', ic: 'funnel', l: 'Calculadora de funil' }, { v: 'quiz', ic: 'pulse', l: 'Diagnóstico' }]
   const isActive = (t: TabDef) => view === t.v || (t.v === 'mentees' && view === 'detail')
   const moreActive = more.some(t => t.v === view)
   const go = (v: View) => { setView(v); setMoreOpen(false) }
@@ -293,12 +293,12 @@ function MobileTabbar({ role, view, setView, alertBadge, admin, moreOpen, setMor
       <nav className="tabbar">
         {main.map(t => (
           <button key={t.v} className={`tab-item ${isActive(t) ? 'on' : ''}`} onClick={() => go(t.v)}>
-            <span className="tab-ic">{t.ic}</span>{t.l}
+            <span className="tab-ic"><Ic n={t.ic} size={17} /></span>{t.l}
             {t.v === 'alerts' && alertBadge > 0 && <span className="tab-badge">{alertBadge}</span>}
           </button>
         ))}
         <button className={`tab-item ${moreActive || moreOpen ? 'on' : ''}`} onClick={() => setMoreOpen(!moreOpen)}>
-          <span className="tab-ic">⋯</span>Mais
+          <span className="tab-ic" style={{ letterSpacing: 1 }}>⋯</span>Mais
         </button>
       </nav>
       {moreOpen && (
@@ -311,7 +311,7 @@ function MobileTabbar({ role, view, setView, alertBadge, admin, moreOpen, setMor
             <div className="more-grid">
               {more.map(t => (
                 <button key={t.v} className={`more-item ${view === t.v ? 'on' : ''}`} onClick={() => go(t.v)}>
-                  <span className="mi-ic">{t.ic}</span>{t.l}
+                  <span className="mi-ic"><Ic n={t.ic} size={15} /></span>{t.l}
                 </button>
               ))}
             </div>
@@ -338,19 +338,19 @@ function MobileTabbar({ role, view, setView, alertBadge, admin, moreOpen, setMor
 type Role = 'advisor' | 'mentee'
 type View = 'overview' | 'alerts' | 'agenda' | 'admin' | 'evolution' | 'materials' | 'mymaterials' | 'mentees' | 'detail' | 'sales' | 'campaigns' | 'team' | 'playbooks' | 'journey' | 'week' | 'results' | 'myevolution' | 'funnel' | 'funnelboard' | 'quiz' | 'rewards'
 
-const NAV: { id: View; label: string }[] = [
-  { id: 'overview', label: 'Visão geral' },
-  { id: 'alerts', label: 'Alertas' },
-  { id: 'agenda', label: 'Agenda' },
-  { id: 'evolution', label: 'Evolução' },
-  { id: 'mentees', label: 'Mentorados' },
-  { id: 'sales', label: 'Comercial' },
-  { id: 'campaigns', label: 'Campanhas' },
-  { id: 'funnelboard', label: 'Funil' },
-  { id: 'playbooks', label: 'Playbooks' },
-  { id: 'materials', label: 'Materiais' },
-  { id: 'rewards', label: 'Recompensas' },
-  { id: 'team', label: 'Equipe' },
+const NAV: { id: View; label: string; ic: string }[] = [
+  { id: 'overview', label: 'Visão geral', ic: 'grid' },
+  { id: 'alerts', label: 'Alertas', ic: 'bell' },
+  { id: 'agenda', label: 'Agenda', ic: 'calendar' },
+  { id: 'evolution', label: 'Evolução', ic: 'trend' },
+  { id: 'mentees', label: 'Mentorados', ic: 'users' },
+  { id: 'sales', label: 'Comercial', ic: 'bars' },
+  { id: 'campaigns', label: 'Campanhas', ic: 'megaphone' },
+  { id: 'funnelboard', label: 'Funil', ic: 'funnel' },
+  { id: 'playbooks', label: 'Playbooks', ic: 'book' },
+  { id: 'materials', label: 'Materiais', ic: 'file' },
+  { id: 'rewards', label: 'Recompensas', ic: 'gift' },
+  { id: 'team', label: 'Equipe', ic: 'shield' },
 ]
 
 interface AppProps {
@@ -614,38 +614,38 @@ export default function App({ store: cStore, setStore: cSetStore, cloudEmail, on
                 <button key={n.id}
                   className={`nav-item ${view === n.id || (n.id === 'mentees' && view === 'detail') ? 'active' : ''}`}
                   onClick={() => setView(n.id)}>
-                  <span className="dot" /> {n.label}
+                  <span className="nav-ic"><Ic n={n.ic} size={15} /></span> {n.label}
                   {n.id === 'alerts' && alertCount > 0 && settings.notifications.badge && <span className="nav-badge">{alertCount}</span>}
                 </button>
               ))}
               {admin && (
                 <button className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>
-                  <span className="dot" /> Administração
+                  <span className="nav-ic"><Ic n="gear" size={15} /></span> Administração
                 </button>
               )}
             </>
           ) : (
             <>
               <button className={`nav-item ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>
-                <span className="dot" /> Minha semana
+                <span className="nav-ic"><Ic n="tasks" size={15} /></span> Minha semana
               </button>
               <button className={`nav-item ${view === 'journey' ? 'active' : ''}`} onClick={() => setView('journey')}>
-                <span className="dot" /> Minha jornada
+                <span className="nav-ic"><Ic n="compass" size={15} /></span> Minha jornada
               </button>
               <button className={`nav-item ${view === 'results' ? 'active' : ''}`} onClick={() => setView('results')}>
-                <span className="dot" /> Meus resultados
+                <span className="nav-ic"><Ic n="bars" size={15} /></span> Meus resultados
               </button>
               <button className={`nav-item ${view === 'myevolution' ? 'active' : ''}`} onClick={() => setView('myevolution')}>
-                <span className="dot" /> Minha evolução
+                <span className="nav-ic"><Ic n="trend" size={15} /></span> Minha evolução
               </button>
               <button className={`nav-item ${view === 'mymaterials' ? 'active' : ''}`} onClick={() => setView('mymaterials')}>
-                <span className="dot" /> Materiais
+                <span className="nav-ic"><Ic n="file" size={15} /></span> Materiais
               </button>
               <button className={`nav-item ${view === 'funnel' ? 'active' : ''}`} onClick={() => setView('funnel')}>
-                <span className="dot" /> Calculadora de funil
+                <span className="nav-ic"><Ic n="funnel" size={15} /></span> Calculadora de funil
               </button>
               <button className={`nav-item ${view === 'quiz' ? 'active' : ''}`} onClick={() => setView('quiz')}>
-                <span className="dot" /> Diagnóstico
+                <span className="nav-ic"><Ic n="pulse" size={15} /></span> Diagnóstico
               </button>
             </>
           )}
